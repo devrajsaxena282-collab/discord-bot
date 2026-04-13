@@ -150,4 +150,4 @@ async def on_ready():
     print(f"🔥 Bot Ready: {bot.user}")
 
 # -------- RUN --------
-bot.run("TOKEN_HERE")
+bot.run(os.getenv("DISCORD_TOKEN"))
