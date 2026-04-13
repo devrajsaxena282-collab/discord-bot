@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from io import BytesIO
 import os
 
-from flask import Flask
 from threading import Thread
 
 app = Flask("")
@@ -178,7 +177,6 @@ async def on_ready():
     print(f"🔥 Bot Ready: {bot.user}")
 
 # -------- RUN --------
-keep_alive()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 if TOKEN is None:
