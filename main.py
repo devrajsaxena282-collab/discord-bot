@@ -12,6 +12,17 @@ cooldowns = {}
 STAFF_ROLE = "Staff"
 LOG_CHANNEL = "ticket-logs"
 
+# ---- READY ----
+@bot.event
+async def on_ready():
+    print(f"🔥 Bot Ready: {bot.user}")
+
+TOKEN = os.getenv("DISCORD_TOKEN")
+
+if TOKEN:
+    bot.run(TOKEN)
+else:
+    print("❌ DISCORD_TOKEN missing in environment variables")
 # -------- BUTTON VIEW --------
 class TicketButtons(discord.ui.View):
     def __init__(self):
