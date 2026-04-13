@@ -6,8 +6,6 @@ import os
 
 from threading import Thread
 
-app = Flask("")
-
 @app.route("/")
 def home():
     return "Bot is alive"
