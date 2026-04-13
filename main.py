@@ -24,6 +24,7 @@ class TicketButtons(discord.ui.View):
 
     @discord.ui.button(label="Claim", style=discord.ButtonStyle.primary)
     async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
+
         role = discord.utils.get(interaction.guild.roles, name=STAFF_ROLE)
 
         if role not in interaction.user.roles:
@@ -32,21 +33,21 @@ class TicketButtons(discord.ui.View):
                 ephemeral=True
             )
 
-        await interaction.channel.send(f"👤 {interaction.user.mention} claimed this ticket")
+        await interaction.response.send_message(
+            f"👤 {interaction.user.mention} claimed this ticket"
+        )
 
     @discord.ui.button(label="Verify Payment", style=discord.ButtonStyle.success)
     async def verify(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.channel.send(
-            f"💰 Payment marked as verified by {interaction.user.mention}"
+
+        await interaction.response.send_message(
+            f"💰 Payment verified by {interaction.user.mention}"
         )
 
     @discord.ui.button(label="Close", style=discord.ButtonStyle.danger)
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
 
-        log_channel = discord.utils.get(
-            interaction.guild.text_channels,
-            name=LOG_CHANNEL
-        )
+        log_channel = discord.utils.get(interaction.guild.text_channels, name=LOG_CHANNEL)
 
         transcript = []
         async for msg in interaction.channel.history(limit=200):
@@ -75,12 +76,12 @@ class TicketDropdown(discord.ui.Select):
         super().__init__(placeholder="Select Ticket Type", options=options)
 
     async def callback(self, interaction: discord.Interaction):
+
         try:
             await interaction.response.defer(ephemeral=True)
 
             now = datetime.now()
 
-            # cooldown
             if interaction.user.id in cooldowns:
                 if now < cooldowns[interaction.user.id]:
                     return await interaction.followup.send(
@@ -97,7 +98,7 @@ class TicketDropdown(discord.ui.Select):
             category = discord.utils.get(guild.categories, name="ticket")
             if not category:
                 return await interaction.followup.send(
-                    "❌ 'ticket' category missing!",
+                    "❌ Create 'ticket' category first",
                     ephemeral=True
                 )
 
@@ -109,13 +110,11 @@ class TicketDropdown(discord.ui.Select):
                         ephemeral=True
                     )
 
-            # create channel
             channel = await guild.create_text_channel(
                 name=f"ticket-{interaction.user.id}",
                 category=category
             )
 
-            # permissions
             await channel.set_permissions(guild.default_role, read_messages=False)
             await channel.set_permissions(interaction.user, read_messages=True, send_messages=True)
 
@@ -123,7 +122,6 @@ class TicketDropdown(discord.ui.Select):
             if staff_role:
                 await channel.set_permissions(staff_role, read_messages=True, send_messages=True)
 
-            # embed
             embed = discord.Embed(
                 title="INTELLECT-X Support",
                 description=f"Category: **{self.values[0]}**\nStaff will assist you shortly.",
@@ -146,7 +144,13 @@ class TicketDropdown(discord.ui.Select):
             print("ERROR:", e)
             await interaction.followup.send("❌ Bot error occurred", ephemeral=True)
 
-# ---------------- PANEL ----------------
+# ---------------- VIEW ----------------
+class TicketView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(TicketDropdown())
+
+# ---------------- PANEL COMMAND ----------------
 @bot.command()
 async def panel(ctx):
 
@@ -155,34 +159,18 @@ async def panel(ctx):
         description="""
 Admin: iqs.caelis
 
-Welcome to the official ticket system of INTELLECT-X.
-Open a ticket for purchases, support, or any product-related inquiries.
+Open ticket for support or purchases.
 
-━━━━━━━━━━━━━━━━━━━━━━
-🧡 Rules:
-• Tickets are only for purchases and support.
-• Any unrelated requests = instant ban.
-• Maintain respect with staff at all times.
-━━━━━━━━━━━━━━━━━━━━━━
-
-Interact with the below combo box to proceed!
-━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━
+Rules:
+• Only support/purchase tickets
+• No spam
+━━━━━━━━━━━━━━
 """,
         color=discord.Color.dark_red()
     )
 
-    embed.set_author(
-        name="INTELLECT-X Security System",
-        icon_url="https://i.postimg.cc/6q1XHnPh/1000204859.png"
-    )
-
     await ctx.send(embed=embed, view=TicketView())
-
-# ---------------- VIEW ----------------
-class TicketView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.add_item(TicketDropdown())
 
 # ---------------- RUN ----------------
 TOKEN = os.getenv("DISCORD_TOKEN")
