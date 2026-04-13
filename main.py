@@ -4,6 +4,22 @@ from datetime import datetime, timedelta
 from io import BytesIO
 import os
 
+from flask import Flask
+from threading import Thread
+
+app = Flask("")
+
+@app.route("/")
+def home():
+    return "Bot is alive"
+
+def run():
+    app.run(host="0.0.0.0", port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -162,6 +178,7 @@ async def on_ready():
     print(f"🔥 Bot Ready: {bot.user}")
 
 # -------- RUN --------
+keep_alive()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 if TOKEN is None:
