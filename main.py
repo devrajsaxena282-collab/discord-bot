@@ -151,4 +151,9 @@ async def on_ready():
     print(f"🔥 Bot Ready: {bot.user}")
 
 # -------- RUN --------
-bot.run(os.getenv("DISCORD_TOKEN"))
+TOKEN = os.getenv("DISCORD_TOKEN")
+
+if TOKEN is None:
+    print("❌ DISCORD_TOKEN not found in environment variables")
+else:
+    bot.run(TOKEN)
