@@ -105,7 +105,15 @@ class TicketDropdown(discord.ui.Select):
 
 discord.SelectOption(label="AIMSILENT EXE", emoji="🔴"),
 
+discord.SelectOption(label="AIMSILENT APK", emoji="🔴"),
+
 discord.SelectOption(label="STREAMER PANEL", emoji="🔴"),
+
+discord.SelectOption(label="INTERNAL MAX", emoji="🔴"),
+
+discord.SelectOption(label="AIMKILL EXE", emoji="🔴"),
+
+discord.SelectOption(label="AIMSILENT APK", emoji="🔴"),
         ]
         super().__init__(placeholder="Select Ticket Type", options=options)
 
