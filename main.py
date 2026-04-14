@@ -139,7 +139,7 @@ class TicketDropdown(discord.ui.Select):
                 name=f"ticket-{interaction.user.id}",
                 category=category
             )
-try:
+
             await channel.set_permissions(guild.default_role, read_message=False)
 except Exception as e:
 print("Permission error:" e)
