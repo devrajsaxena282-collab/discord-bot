@@ -139,8 +139,10 @@ class TicketDropdown(discord.ui.Select):
                 name=f"ticket-{interaction.user.id}",
                 category=category
             )
-
-            await channel.set_permissions(guild.default_role, read_messages=False)
+try:
+            await channel.set_permissions(guild.default_role, read_message=False)
+except:
+pass
             await channel.set_permissions(interaction.user, read_messages=True, send_messages=True)
 
             staff_role = discord.utils.get(guild.roles, name=STAFF_ROLE)
