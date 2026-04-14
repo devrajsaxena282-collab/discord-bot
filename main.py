@@ -199,27 +199,25 @@ async def panel(ctx):
         title="INTELLECT-X – Official Tickets System",
         description="""
 Welcome to the official ticket system of INTELLECT-X.
-Open a ticket for purchases, support, or any product-related inquiries.
 
 ━━━━━━━━━━━━━━━━━━━━━━
 🧡 Rules:-
 • Tickets are only for purchases and support.
-• Any unrelated requests = instant ban.
 • Maintain respect with staff at all times.
-━━━━━━━━━━━━━━━━━━━━━━
-Interact with the below combo box to proceed!
 ━━━━━━━━━━━━━━━━━━━━━━
 """,
         color=discord.Color.dark_red()
     )
 
-    # ✔ LEFT SIDE LOGO (THUMBNAIL)
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
 
-    # 🔥 MIDDLE GIF (FIXED POSITION)
+    # 🔥 GIF FIX (IMPORTANT)
     embed.set_image(url="https://cdn.discordapp.com/attachments/1490258081903542383/1493574744157454336/standard_1.gif")
 
-    await ctx.send(embed=embed, view=TicketView())
+    try:
+        await ctx.send(embed=embed, view=TicketView())
+    except Exception as e:
+        print("Panel Error:", e)
 
 
 # ---------------- RUN ----------------
