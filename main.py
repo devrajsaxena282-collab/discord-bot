@@ -217,7 +217,7 @@ Interact with the below combo box to proceed!
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
 
     # 🔥 MIDDLE GIF (FIXED POSITION)
-    embed.set_image(url="https://media.discordapp.net/attachments/1490258081903542383/1493574744157454336/standard_1.gif")
+    embed.set_image(url="https://cdn.discordapp.com/attachments/1490258081903542383/1493574744157454336/standard_1.gif")
 
     await ctx.send(embed=embed, view=TicketView())
 
