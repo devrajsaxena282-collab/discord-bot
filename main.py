@@ -13,10 +13,12 @@ def home():
     return "OK"
 
 def run():
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)), debug=False, use_reloader=False)
+    app.run(host="0.0.0.0", port=8080, debug=False, use_reloader=False)
 
 def keep_alive():
-    Thread(target=run, daemon=True).start()
+    t = Thread(target=run)
+    t.daemon = True
+    t.start()
 
 # ---------------- BOT ----------------
 
