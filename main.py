@@ -141,7 +141,8 @@ class TicketDropdown(discord.ui.Select):
             )
 try:
             await channel.set_permissions(guild.default_role, read_message=False)
-except:
+except Exception as e:
+print("Permission error:" e)
 pass
             await channel.set_permissions(interaction.user, read_messages=True, send_messages=True)
 
