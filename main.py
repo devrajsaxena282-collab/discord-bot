@@ -123,16 +123,26 @@ class TicketDropdown(discord.ui.Select):
             category=category
         )
 
-        # lock everyone
-        await channel.set_permissions(guild.default_role, view_channel=False)
+       # 🚫 BLOCK EVERYONE
+await channel.set_permissions(guild.default_role, view_channel=False)
 
-        # user access
-        await channel.set_permissions(interaction.user, view_channel=True, send_messages=True)
+# 👤 CLIENT = VIEW ONLY (NO MESSAGE)
+await channel.set_permissions(
+    interaction.user,
+    view_channel=True,
+    send_messages=False,
+    read_message_history=True
+)
 
-        # staff access
-        staff_role = discord.utils.get(guild.roles, name=STAFF_ROLE)
-        if staff_role:
-            await channel.set_permissions(staff_role, view_channel=True, send_messages=True)
+# 👨‍💼 STAFF = FULL ACCESS
+staff_role = discord.utils.get(guild.roles, name=STAFF_ROLE)
+if staff_role:
+    await channel.set_permissions(
+        staff_role,
+        view_channel=True,
+        send_messages=True,
+        read_message_history=True
+    )
 
         active_tickets[user_id] = channel.id
 
