@@ -102,6 +102,10 @@ class TicketDropdown(discord.ui.Select):
             discord.SelectOption(label="UID BYPASS", emoji="🔴"),
             discord.SelectOption(label="EMULATOR BYPASS", emoji="🔴"),
             discord.SelectOption(label="CUSTOM PANEL", emoji="🔴"),
+
+discord.SelectOption(label="AIMSILENT EXE", emoji="🔴"),
+
+discord.SelectOption(label="STREAMER PANEL", emoji="🔴"),
         ]
         super().__init__(placeholder="Select Ticket Type", options=options)
 
