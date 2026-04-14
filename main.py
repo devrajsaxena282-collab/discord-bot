@@ -196,7 +196,17 @@ async def panel(ctx):
 
     embed = discord.Embed(
         title="INTELLECT-X – Official Tickets System",
-        description="Open ticket for support or purchases.",
+        description="Welcome to the official ticket system of INTELLECT-X.
+Open a ticket for purchases, support, or any product-related inquiries.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🧡Rules:-
+• Tickets are only for purchases and support.
+• Any unrelated requests = instant ban.
+• Maintain respect with staff at all times.
+━━━━━━━━━━━━━━━━━━━━━━
+Interact with the below combo box to proceed!
+━━━━━━━━━━━━━━━━━━━━━━",
         color=discord.Color.dark_red()
     )
 
