@@ -115,7 +115,7 @@ discord.SelectOption(label="AIMKILL EXE", emoji="🔴"),
 
 discord.SelectOption(label="AIMSILENT APK", emoji="🔴"),
 
-        ]
+        
         super().__init__(placeholder="Select Ticket Type", options=options)
 
     async def callback(self, interaction: discord.Interaction):
