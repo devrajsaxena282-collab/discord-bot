@@ -6,7 +6,6 @@ import os
 
 from flask import Flask
 from threading import Thread
-import os
 
 app = Flask(__name__)
 
@@ -19,12 +18,15 @@ def run():
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 8080)),
         debug=False,
-use_reloader=False
+        use_reloader=False
     )
 
 def keep_alive():
     Thread(target=run, daemon=True).start()
- 
+
+
+# ---------------- DISCORD BOT ----------------
+
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -37,37 +39,30 @@ cooldowns = {}
 STAFF_ROLE = "Staff"
 LOG_CHANNEL = "ticket-logs"
 
-# ---------------- READY ----------------
+
 @bot.event
 async def on_ready():
     print(f"🔥 Bot Ready: {bot.user}")
 
-# ---------------- BUTTON VIEW ----------------
+
+# ---------------- BUTTONS ----------------
+
 class TicketButtons(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Claim", style=discord.ButtonStyle.primary)
     async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
-
         role = discord.utils.get(interaction.guild.roles, name=STAFF_ROLE)
 
         if role not in interaction.user.roles:
-            return await interaction.response.send_message(
-                "❌ Staff only!",
-                ephemeral=True
-            )
+            return await interaction.response.send_message("❌ Staff only!", ephemeral=True)
 
-        await interaction.response.send_message(
-            f"👤 {interaction.user.mention} claimed this ticket"
-        )
+        await interaction.response.send_message(f"👤 {interaction.user.mention} claimed this ticket")
 
     @discord.ui.button(label="Verify Payment", style=discord.ButtonStyle.success)
     async def verify(self, interaction: discord.Interaction, button: discord.ui.Button):
-
-        await interaction.response.send_message(
-            f"💰 Payment verified by {interaction.user.mention}"
-        )
+        await interaction.response.send_message(f"💰 Payment verified by {interaction.user.mention}")
 
     @discord.ui.button(label="Close", style=discord.ButtonStyle.danger)
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -82,14 +77,13 @@ class TicketButtons(discord.ui.View):
 
         if log_channel:
             file = discord.File(BytesIO(text.encode()), filename="transcript.txt")
-            await log_channel.send(
-                f"📜 Transcript: {interaction.channel.name}",
-                file=file
-            )
+            await log_channel.send(f"📜 Transcript: {interaction.channel.name}", file=file)
 
         await interaction.channel.delete()
 
+
 # ---------------- DROPDOWN ----------------
+
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
         options = [
@@ -109,10 +103,7 @@ class TicketDropdown(discord.ui.Select):
 
             if interaction.user.id in cooldowns:
                 if now < cooldowns[interaction.user.id]:
-                    return await interaction.followup.send(
-                        "⏳ Wait before creating another ticket",
-                        ephemeral=True
-                    )
+                    return await interaction.followup.send("⏳ Wait before creating another ticket", ephemeral=True)
 
             cooldowns[interaction.user.id] = now + timedelta(seconds=30)
 
@@ -122,33 +113,34 @@ class TicketDropdown(discord.ui.Select):
 
             category = discord.utils.get(guild.categories, name="ticket")
             if not category:
-                return await interaction.followup.send(
-                    "❌ Create 'ticket' category first",
-                    ephemeral=True
-                )
+                return await interaction.followup.send("❌ Create 'ticket' category first", ephemeral=True)
 
-            # duplicate check
             for ch in category.channels:
                 if str(interaction.user.id) in ch.name:
-                    return await interaction.followup.send(
-                        "❌ You already have a ticket!",
-                        ephemeral=True
-                    )
+                    return await interaction.followup.send("❌ You already have a ticket!", ephemeral=True)
 
             channel = await guild.create_text_channel(
                 name=f"ticket-{interaction.user.id}",
                 category=category
             )
 
-            await channel.set_permissions(guild.default_role, read_message=False)
-except Exception as e:
-print("Permission error:" e)
-pass
-            await channel.set_permissions(interaction.user, read_messages=True, send_messages=True)
+            # FIXED PERMISSIONS (SAFE)
+            try:
+                await channel.set_permissions(guild.default_role, read_messages=False)
+            except Exception as e:
+                print("Default role error:", e)
+
+            try:
+                await channel.set_permissions(interaction.user, read_messages=True, send_messages=True)
+            except Exception as e:
+                print("User permission error:", e)
 
             staff_role = discord.utils.get(guild.roles, name=STAFF_ROLE)
             if staff_role:
-                await channel.set_permissions(staff_role, read_messages=True, send_messages=True)
+                try:
+                    await channel.set_permissions(staff_role, read_messages=True, send_messages=True)
+                except Exception as e:
+                    print("Staff permission error:", e)
 
             embed = discord.Embed(
                 title="INTELLECT-X Support",
@@ -157,54 +149,44 @@ pass
                 timestamp=datetime.now()
             )
 
-            await channel.send(
-                content=interaction.user.mention,
-                embed=embed,
-                view=TicketButtons()
-            )
+            await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
 
-            await interaction.followup.send(
-                f"✅ Ticket created: {channel.mention}",
-                ephemeral=True
-            )
+            await interaction.followup.send(f"✅ Ticket created: {channel.mention}", ephemeral=True)
 
         except Exception as e:
             print("ERROR:", e)
-            await interaction.followup.send("❌ Bot error occurred", ephemeral=True)
+            try:
+                await interaction.followup.send("❌ Bot error occurred", ephemeral=True)
+            except:
+                pass
 
-# ---------------- VIEW ----------------
+
+# ---------------- PANEL ----------------
+
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(TicketDropdown())
 
-# ---------------- PANEL COMMAND ----------------
+
 @bot.command()
 async def panel(ctx):
-
     embed = discord.Embed(
         title="INTELLECT-X – Official Tickets System",
-        description="""
-Admin: iqs.caelis
-
-Open ticket for support or purchases.
-
-━━━━━━━━━━━━━━
-Rules:
-• Only support/purchase tickets
-• No spam
-━━━━━━━━━━━━━━
-""",
+        description="Open ticket for support or purchases.",
         color=discord.Color.dark_red()
     )
 
     await ctx.send(embed=embed, view=TicketView())
 
-# ---------------- RUN ----------------
+
+# ---------------- START ----------------
+
 keep_alive()
+
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-if not TOKEN:
-    print("❌ DISCORD_TOKEN missing in environment variables")
-else:
+if TOKEN:
     bot.run(TOKEN)
+else:
+    print("❌ DISCORD_TOKEN missing")
