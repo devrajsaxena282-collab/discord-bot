@@ -138,7 +138,7 @@ Interact with the below combo box to proceed!
         embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
 
         # GIF MIDDLE IMAGE
-        embed.set_image(url="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZWY5ZzZ0b2Z5dW5xZ2x1YzF0b3Z1b2Z5dWZ3dWJ0ZzF2dG1hZSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/3o7aD2saalBwwftBIY/giphy.gif")
+        embed.set_image(url="https://media.discordapp.net/attachments/1490258081903542383/1493574744157454336/standard_1.gif?ex=69df7760&is=69de25e0&hm=d6dbeaef8b8b36583defe59ea9656f67cf7d196572e010a3e8c6c909798b9bbd&=&width=585&height=75")
 
         await channel.send(
             content=interaction.user.mention,
