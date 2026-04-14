@@ -191,6 +191,7 @@ class TicketView(discord.ui.View):
         self.add_item(TicketDropdown())
 
 
+
 @bot.command()
 async def panel(ctx):
 
@@ -212,10 +213,11 @@ Interact with the below combo box to proceed!
         color=discord.Color.dark_red()
     )
 
-    # LEFT SIDE CIRCLE LOGO
+    # ✔ LEFT SIDE LOGO (THUMBNAIL)
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
 
-embed.set_image(url="https://media.discordapp.net/attachments/1490258081903542383/1493574744157454336/standard_1.gif?ex=69df7760&is=69de25e0&hm=d6dbeaef8b8b36583defe59ea9656f67cf7d196572e010a3e8c6c909798b9bbd&=&width=585&height=75")
+    # 🔥 MIDDLE GIF (FIXED POSITION)
+    embed.set_image(url="https://media.discordapp.net/attachments/1490258081903542383/1493574744157454336/standard_1.gif")
 
     await ctx.send(embed=embed, view=TicketView())
 
