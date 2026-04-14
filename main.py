@@ -27,7 +27,6 @@ intents.guilds = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ✅ FIX: active ticket tracker
 active_tickets = {}
 
 STAFF_ROLE = "Staff"
@@ -63,32 +62,26 @@ class TicketButtons(discord.ui.View):
 
         await interaction.response.defer()
 
+        guild = interaction.guild
+        log_channel = discord.utils.get(guild.text_channels, name=LOG_CHANNEL)
+
         try:
-            guild = interaction.guild
-            log_channel = discord.utils.get(guild.text_channels, name=LOG_CHANNEL)
+            user_id = int(interaction.channel.name.split("-")[1])
+            active_tickets.pop(user_id, None)
+        except:
+            pass
 
-            # get user id from channel name
-            try:
-                user_id = int(interaction.channel.name.split("-")[1])
-                if user_id in active_tickets:
-                    del active_tickets[user_id]
-            except:
-                pass
+        transcript = []
+        async for msg in interaction.channel.history(limit=200):
+            transcript.append(f"{msg.author}: {msg.content}")
 
-            transcript = []
-            async for msg in interaction.channel.history(limit=200):
-                transcript.append(f"{msg.author}: {msg.content}")
+        text = "\n".join(transcript[::-1])
 
-            text = "\n".join(transcript[::-1])
+        if log_channel:
+            file = discord.File(BytesIO(text.encode()), filename="transcript.txt")
+            await log_channel.send(f"📜 Transcript: {interaction.channel.name}", file=file)
 
-            if log_channel:
-                file = discord.File(BytesIO(text.encode()), filename="transcript.txt")
-                await log_channel.send(f"📜 Transcript: {interaction.channel.name}", file=file)
-
-            await interaction.channel.delete()
-
-        except Exception as e:
-            print("Close error:", e)
+        await interaction.channel.delete()
 
 # ---------------- DROPDOWN ----------------
 
@@ -109,54 +102,46 @@ class TicketDropdown(discord.ui.Select):
         guild = interaction.guild
         user_id = interaction.user.id
 
-        # ❌ already ticket check
         if user_id in active_tickets:
-            return await interaction.followup.send("❌ You already have an active ticket!", ephemeral=True)
+            return await interaction.followup.send("❌ You already have a ticket!", ephemeral=True)
 
         category = discord.utils.get(guild.categories, name="ticket")
         if not category:
             return await interaction.followup.send("❌ Create 'ticket' category first", ephemeral=True)
 
-        # create channel
         channel = await guild.create_text_channel(
             name=f"ticket-{user_id}",
             category=category
         )
 
-       # 🚫 BLOCK EVERYONE
-await channel.set_permissions(guild.default_role, view_channel=False)
+        # 🔥 FIXED PERMISSIONS (IMPORTANT)
+        await channel.set_permissions(guild.default_role, view_channel=False)
 
-# 👤 CLIENT = VIEW ONLY (NO MESSAGE)
-await channel.set_permissions(
-    interaction.user,
-    view_channel=True,
-    send_messages=False,
-    read_message_history=True
-)
+        await channel.set_permissions(
+            interaction.user,
+            view_channel=True,
+            send_messages=True,
+            read_message_history=True
+        )
 
-# 👨‍💼 STAFF = FULL ACCESS
-staff_role = discord.utils.get(guild.roles, name=STAFF_ROLE)
-if staff_role:
-    await channel.set_permissions(
-        staff_role,
-        view_channel=True,
-        send_messages=True,
-        read_message_history=True
-    )
+        staff_role = discord.utils.get(guild.roles, name=STAFF_ROLE)
+        if staff_role:
+            await channel.set_permissions(
+                staff_role,
+                view_channel=True,
+                send_messages=True,
+                read_message_history=True
+            )
 
         active_tickets[user_id] = channel.id
 
         embed = discord.Embed(
             title="INTELLECT-X Support",
-            description="Your ticket has been created. Staff will assist you soon.",
+            description="Welcome! Staff will assist you soon.",
             color=discord.Color.dark_red()
         )
 
-        await channel.send(
-            content=interaction.user.mention,
-            embed=embed,
-            view=TicketButtons()
-        )
+        await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
 
         await interaction.followup.send(f"✅ Ticket created: {channel.mention}", ephemeral=True)
 
@@ -176,13 +161,13 @@ async def panel(ctx):
         title="INTELLECT-X – Official Tickets System",
         description="""
 Welcome to the official ticket system of INTELLECT-X.
-Open a ticket for purchases, support, or any product-related inquiries.
+Open a ticket for support or purchases.
 
 ━━━━━━━━━━━━━━━━━━━━━━
 🧡 Rules:
-• Tickets are only for purchases and support.
-• Any unrelated requests = instant ban.
-• Maintain respect with staff at all times.
+• Only support & purchase tickets
+• No spam
+• Respect staff
 ━━━━━━━━━━━━━━━━━━━━━━
 """,
         color=discord.Color.dark_red()
@@ -192,7 +177,7 @@ Open a ticket for purchases, support, or any product-related inquiries.
 
     await ctx.send(embed=embed, view=TicketView())
 
-# ---------------- START ----------------
+# ---------------- RUN ----------------
 
 keep_alive()
 
