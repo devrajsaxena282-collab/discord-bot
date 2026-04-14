@@ -38,6 +38,14 @@ LOG_CHANNEL = "ticket-logs"
 async def on_ready():
     print(f"🔥 Bot Ready: {bot.user}")
 
+# ---------------- PURGE COMMAND (ADDED) ----------------
+
+@bot.command()
+@commands.has_permissions(manage_messages=True)
+async def purge(ctx, amount: int = 100):
+    await ctx.channel.purge(limit=amount)
+    await ctx.send(f"🧹 {amount} messages deleted!", delete_after=3)
+
 # ---------------- BUTTONS ----------------
 
 class TicketButtons(discord.ui.View):
@@ -116,7 +124,7 @@ class TicketDropdown(discord.ui.Select):
             category=category
         )
 
-        # 🔥 FIXED PERMISSIONS (IMPORTANT)
+        # 🔒 PERMISSIONS
         await channel.set_permissions(guild.default_role, view_channel=False)
 
         await channel.set_permissions(
