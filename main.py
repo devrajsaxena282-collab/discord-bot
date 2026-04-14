@@ -191,33 +191,31 @@ class TicketView(discord.ui.View):
         self.add_item(TicketDropdown())
 
 
-
 @bot.command()
 async def panel(ctx):
 
     embed = discord.Embed(
         title="INTELLECT-X – Official Tickets System",
-        description="""
-Welcome to the official ticket system of INTELLECT-X.
+        description=f"""
+Welcome to **INTELLECT-X Support System**
 
-━━━━━━━━━━━━━━━━━━━━━━
-🧡 Rules:-
-• Tickets are only for purchases and support.
-• Maintain respect with staff at all times.
-━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━
+💬 Staff will assist you shortly.
+⏳ Please wait patiently.
+━━━━━━━━━━━━━━━━━━
+
+Rules:
+• No spam
+• Respect staff
+• Only related queries allowed
 """,
         color=discord.Color.dark_red()
     )
 
+    # LEFT SIDE CIRCLE LOGO
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
 
-    # 🔥 GIF FIX (IMPORTANT)
-    embed.set_image(url="https://cdn.discordapp.com/attachments/1490258081903542383/1493574744157454336/standard_1.gif")
-
-    try:
-        await ctx.send(embed=embed, view=TicketView())
-    except Exception as e:
-        print("Panel Error:", e)
+    await ctx.send(embed=embed, view=TicketView())
 
 
 # ---------------- RUN ----------------
