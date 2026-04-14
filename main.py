@@ -192,6 +192,7 @@ Rules:
     await ctx.send(embed=embed, view=TicketView())
 
 # ---------------- RUN ----------------
+keep_alive()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 if not TOKEN:
