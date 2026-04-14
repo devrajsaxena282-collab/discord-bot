@@ -94,59 +94,70 @@ class TicketDropdown(discord.ui.Select):
         ]
         super().__init__(placeholder="Select Ticket Type", options=options)
 
-    async def callback(self, interaction: discord.Interaction):
+    
+async def callback(self, interaction: discord.Interaction):
 
-        await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer(ephemeral=True)
 
-        guild = interaction.guild
+    guild = interaction.guild
+    user_id = interaction.user.id
 
-        category = discord.utils.get(guild.categories, name="ticket")
-        if not category:
-            return await interaction.followup.send("❌ Create ticket category first", ephemeral=True)
-
-        channel = await guild.create_text_channel(
-            name=f"ticket-{interaction.user.id}",
-            category=category
+    # ✅ ONE TICKET ONLY CHECK
+    if user_id in active_tickets:
+        return await interaction.followup.send(
+            "❌ You already have an active ticket!",
+            ephemeral=True
         )
 
-        await channel.set_permissions(guild.default_role, view_channel=False)
-        await channel.set_permissions(interaction.user, view_channel=True, send_messages=True)
+    category = discord.utils.get(guild.categories, name="ticket")
+    if not category:
+        return await interaction.followup.send("❌ Create 'ticket' category first", ephemeral=True)
 
-        staff_role = discord.utils.get(guild.roles, name=STAFF_ROLE)
-        if staff_role:
-            await channel.set_permissions(staff_role, view_channel=True, send_messages=True)
+    channel = await guild.create_text_channel(
+        name=f"ticket-{user_id}",
+        category=category
+    )
 
-        embed = discord.Embed(
-            title="INTELLECT-X – Official Tickets System",
-            description="""
-Welcome to the official ticket system of INTELLECT-X.
-Open a ticket for purchases, support, or any product-related inquiries.
+    # ✅ LOCK EVERYONE
+    await channel.set_permissions(guild.default_role, view_channel=False)
 
-━━━━━━━━━━━━━━━━━━━━━━
-🧡 Rules:-
-• Tickets are only for purchases and support.
-• Any unrelated requests = instant ban.
-• Maintain respect with staff at all times.
-━━━━━━━━━━━━━━━━━━━━━━
-Interact with the below combo box to proceed!
-━━━━━━━━━━━━━━━━━━━━━━
-""",
-            color=discord.Color.dark_red(),
-            timestamp=datetime.now()
+    # ✅ USER ACCESS
+    await channel.set_permissions(
+        interaction.user,
+        view_channel=True,
+        send_messages=True
+    )
+
+    # ✅ STAFF ONLY ACCESS
+    staff_role = discord.utils.get(guild.roles, name=STAFF_ROLE)
+    if staff_role:
+        await channel.set_permissions(
+            staff_role,
+            view_channel=True,
+            send_messages=True
         )
 
-        embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
+    # ✅ STORE ACTIVE TICKET
+    active_tickets[user_id] = channel.id
 
-        # GIF MIDDLE IMAGE
-        embed.set_image(url="https://media.discordapp.net/attachments/1490258081903542383/1493574744157454336/standard_1.gif?ex=69df7760&is=69de25e0&hm=d6dbeaef8b8b36583defe59ea9656f67cf7d196572e010a3e8c6c909798b9bbd&=&width=585&height=75")
+    embed = discord.Embed(
+        title="INTELLECT-X Support",
+        description="Your ticket has been created. Staff will assist you soon.",
+        color=discord.Color.dark_red()
+    )
 
-        await channel.send(
-            content=interaction.user.mention,
-            embed=embed,
-            view=TicketButtons()
-        )
+    await channel.send(
+        content=interaction.user.mention,
+        embed=embed,
+        view=TicketButtons()
+    )
 
-        await interaction.followup.send(f"✅ Ticket created: {channel.mention}", ephemeral=True)
+    await interaction.followup.send(
+        f"✅ Ticket created: {channel.mention}",
+        ephemeral=True
+    )
+    
+
 
 # ---------------- PANEL ----------------
 
