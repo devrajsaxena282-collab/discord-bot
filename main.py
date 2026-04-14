@@ -25,7 +25,7 @@ def keep_alive():
     Thread(target=run, daemon=True).start()
 
 
-# ---------------- DISCORD BOT ----------------
+# ---------------- BOT ----------------
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -53,33 +53,52 @@ class TicketButtons(discord.ui.View):
 
     @discord.ui.button(label="Claim", style=discord.ButtonStyle.primary)
     async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        await interaction.response.defer()
+
         role = discord.utils.get(interaction.guild.roles, name=STAFF_ROLE)
 
         if role not in interaction.user.roles:
-            return await interaction.response.send_message("❌ Staff only!", ephemeral=True)
+            return await interaction.followup.send("❌ Staff only!", ephemeral=True)
 
-        await interaction.response.send_message(f"👤 {interaction.user.mention} claimed this ticket")
+        await interaction.followup.send(f"👤 {interaction.user.mention} claimed this ticket")
 
     @discord.ui.button(label="Verify Payment", style=discord.ButtonStyle.success)
     async def verify(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(f"💰 Payment verified by {interaction.user.mention}")
+
+        await interaction.response.defer()
+
+        await interaction.followup.send(f"💰 Payment verified by {interaction.user.mention}")
 
     @discord.ui.button(label="Close", style=discord.ButtonStyle.danger)
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
 
-        log_channel = discord.utils.get(interaction.guild.text_channels, name=LOG_CHANNEL)
+        await interaction.response.defer()
 
-        transcript = []
-        async for msg in interaction.channel.history(limit=200):
-            transcript.append(f"{msg.author}: {msg.content}")
+        try:
+            log_channel = discord.utils.get(interaction.guild.text_channels, name=LOG_CHANNEL)
 
-        text = "\n".join(transcript[::-1])
+            transcript = []
+            async for msg in interaction.channel.history(limit=200):
+                transcript.append(f"{msg.author}: {msg.content}")
 
-        if log_channel:
-            file = discord.File(BytesIO(text.encode()), filename="transcript.txt")
-            await log_channel.send(f"📜 Transcript: {interaction.channel.name}", file=file)
+            text = "\n".join(transcript[::-1])
 
-        await interaction.channel.delete()
+            if log_channel:
+                file = discord.File(BytesIO(text.encode()), filename="transcript.txt")
+                await log_channel.send(
+                    f"📜 Transcript: {interaction.channel.name}",
+                    file=file
+                )
+
+            await interaction.channel.delete()
+
+        except Exception as e:
+            print("Close error:", e)
+            try:
+                await interaction.followup.send("❌ Close failed", ephemeral=True)
+            except:
+                pass
 
 
 # ---------------- DROPDOWN ----------------
@@ -124,23 +143,22 @@ class TicketDropdown(discord.ui.Select):
                 category=category
             )
 
-            # FIXED PERMISSIONS (SAFE)
             try:
                 await channel.set_permissions(guild.default_role, read_messages=False)
-            except Exception as e:
-                print("Default role error:", e)
+            except:
+                pass
 
             try:
                 await channel.set_permissions(interaction.user, read_messages=True, send_messages=True)
-            except Exception as e:
-                print("User permission error:", e)
+            except:
+                pass
 
             staff_role = discord.utils.get(guild.roles, name=STAFF_ROLE)
             if staff_role:
                 try:
                     await channel.set_permissions(staff_role, read_messages=True, send_messages=True)
-                except Exception as e:
-                    print("Staff permission error:", e)
+                except:
+                    pass
 
             embed = discord.Embed(
                 title="INTELLECT-X Support",
@@ -149,7 +167,11 @@ class TicketDropdown(discord.ui.Select):
                 timestamp=datetime.now()
             )
 
-            await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
+            await channel.send(
+                content=interaction.user.mention,
+                embed=embed,
+                view=TicketButtons()
+            )
 
             await interaction.followup.send(f"✅ Ticket created: {channel.mention}", ephemeral=True)
 
@@ -180,7 +202,7 @@ async def panel(ctx):
     await ctx.send(embed=embed, view=TicketView())
 
 
-# ---------------- START ----------------
+# ---------------- RUN ----------------
 
 keep_alive()
 
