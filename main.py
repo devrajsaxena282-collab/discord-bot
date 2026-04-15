@@ -98,24 +98,16 @@ class TicketButtons(discord.ui.View):
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="BASIC PANEL", emoji="🔴"),
-            discord.SelectOption(label="UID BYPASS", emoji="🔴"),
-            discord.SelectOption(label="EMULATOR BYPASS", emoji="🔴"),
-            discord.SelectOption(label="CUSTOM PANEL", emoji="🔴"),
-
-discord.SelectOption(label="AIMSILENT EXE", emoji="🔴"),
-
-discord.SelectOption(label="AIMSILENT APK", emoji="🔴"),
-
-discord.SelectOption(label="STREAMER PANEL", emoji="🔴"),
-
-discord.SelectOption(label="INTERNAL MAX", emoji="🔴"),
-
-discord.SelectOption(label="AIMKILL EXE", emoji="🔴"),
-
-discord.SelectOption(label="AIMSILENT APK", emoji="🔴"),
-
-        ]
+    discord.SelectOption(label="BASIC PANEL", emoji="🔴"),
+    discord.SelectOption(label="UID BYPASS", emoji="🔴"),
+    discord.SelectOption(label="EMULATOR BYPASS", emoji="🔴"),
+    discord.SelectOption(label="CUSTOM PANEL", emoji="🔴"),
+    discord.SelectOption(label="AIMSILENT EXE", emoji="🔴"),
+    discord.SelectOption(label="AIMSILENT APK", emoji="🔴"),
+    discord.SelectOption(label="STREAMER PANEL", emoji="🔴"),
+    discord.SelectOption(label="INTERNAL MAX", emoji="🔴"),
+    discord.SelectOption(label="AIMKILL EXE", emoji="🔴"),
+]
         super().__init__(placeholder="Select Ticket Type", options=options)
 
     async def callback(self, interaction: discord.Interaction):
