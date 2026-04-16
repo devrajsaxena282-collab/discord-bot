@@ -155,7 +155,7 @@ Open a ticket for support or purchases.
     
     # Niche wala bada GIF (Same as your screenshot)
     # Yahan apne GIF ka direct link daalein
-    embed.set_image(url="https://ibb.co/Z6HPrCR7")
+    embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
 
     await ctx.send(embed=embed, view=TicketView())
 
