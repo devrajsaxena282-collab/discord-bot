@@ -30,6 +30,7 @@ intents.guilds = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 active_tickets = {}
+ticket_count = 0  # 🔥 counter
 
 STAFF_ROLE = "Staff"
 LOG_CHANNEL = "ticket-logs"
@@ -38,7 +39,7 @@ LOG_CHANNEL = "ticket-logs"
 async def on_ready():
     print(f"🔥 Bot Ready: {bot.user}")
 
-# ---------------- PURGE COMMAND ----------------
+# ---------------- PURGE ----------------
 
 @bot.command()
 @commands.has_permissions(manage_messages=True)
@@ -68,18 +69,17 @@ class TicketButtons(discord.ui.View):
         await interaction.response.defer()
         guild = interaction.guild
         log_channel = discord.utils.get(guild.text_channels, name=LOG_CHANNEL)
-        try:
-            user_id = int(interaction.channel.name.split("-")[1])
-            active_tickets.pop(user_id, None)
-        except:
-            pass
+
         transcript = []
         async for msg in interaction.channel.history(limit=200):
             transcript.append(f"{msg.author}: {msg.content}")
+
         text = "\n".join(transcript[::-1])
+
         if log_channel:
             file = discord.File(BytesIO(text.encode()), filename="transcript.txt")
             await log_channel.send(f"📜 Transcript: {interaction.channel.name}", file=file)
+
         await interaction.channel.delete()
 
 # ---------------- DROPDOWN ----------------
@@ -100,26 +100,43 @@ class TicketDropdown(discord.ui.Select):
         super().__init__(placeholder="Select Ticket Type", options=options)
 
     async def callback(self, interaction: discord.Interaction):
+        global ticket_count
+
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
         user_id = interaction.user.id
+
         if user_id in active_tickets:
             return await interaction.followup.send("❌ You already have a ticket!", ephemeral=True)
+
         category = discord.utils.get(guild.categories, name="ticket")
         if not category:
             return await interaction.followup.send("❌ Create 'ticket' category first", ephemeral=True)
-        channel = await guild.create_text_channel(name=f"ticket-{user_id}", category=category)
+
+        # 🔥 ticket number system
+        ticket_count += 1
+        ticket_number = str(ticket_count).zfill(3)
+
+        channel = await guild.create_text_channel(
+            name=f"ticket-{ticket_number}",
+            category=category
+        )
+
         await channel.set_permissions(guild.default_role, view_channel=False)
-        await channel.set_permissions(interaction.user, view_channel=True, send_messages=True, read_message_history=True)
+        await channel.set_permissions(interaction.user, view_channel=True, send_messages=True)
+
         staff_role = discord.utils.get(guild.roles, name=STAFF_ROLE)
         if staff_role:
-            await channel.set_permissions(staff_role, view_channel=True, send_messages=True, read_message_history=True)
+            await channel.set_permissions(staff_role, view_channel=True, send_messages=True)
+
         active_tickets[user_id] = channel.id
+
         embed = discord.Embed(
             title="INTELLECT-X Support",
-            description="Welcome! Staff will assist you soon.",
+            description=f"Ticket ID: {ticket_number}\nWelcome! Staff will assist you soon.",
             color=discord.Color.dark_red()
         )
+
         await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
         await interaction.followup.send(f"✅ Ticket created: {channel.mention}", ephemeral=True)
 
@@ -138,7 +155,6 @@ async def panel(ctx):
         title="INTELLECT-X – Official Tickets System",
         description="""
 Welcome to the official ticket system of INTELLECT-X.
-Open a ticket for support or purchases.
 
 ━━━━━━━━━━━━━━━━━━━━━━
 🧡 Rules:
@@ -150,11 +166,7 @@ Open a ticket for support or purchases.
         color=discord.Color.dark_red()
     )
 
-    # Chota icon (Thumbnail)
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
-    
-    # Niche wala bada GIF (Same as your screenshot)
-    # Yahan apne GIF ka direct link daalein
     embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
 
     await ctx.send(embed=embed, view=TicketView())
