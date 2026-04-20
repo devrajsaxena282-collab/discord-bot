@@ -30,7 +30,8 @@ intents.guilds = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-active_tickets = {} # Ye store karega {user_id: channel_id}
+# active_tickets format: {user_id: {"channel_id": id, "type": "panel_name"}}
+active_tickets = {} 
 ticket_count = 0
 
 STAFF_ROLE = "Staff"
@@ -71,21 +72,25 @@ class TicketButtons(discord.ui.View):
         guild = interaction.guild
         log_channel = discord.utils.get(guild.text_channels, name=LOG_CHANNEL)
 
+        # Ticket Type nikaalna aur active_tickets se delete karna
+        ticket_type = "Unknown"
+        for user_id, data in list(active_tickets.items()):
+            if data["channel_id"] == interaction.channel.id:
+                ticket_type = data["type"]
+                del active_tickets[user_id]
+                break
+
         # Transcript
         transcript = []
         async for msg in interaction.channel.history(limit=200):
             transcript.append(f"{msg.author}: {msg.content}")
-        text = "\n".join(transcript[::-1])
+        
+        # Log mein type add karna
+        log_text = f"Ticket Type: {ticket_type}\n\n" + "\n".join(transcript[::-1])
 
         if log_channel:
-            file = discord.File(BytesIO(text.encode()), filename="transcript.txt")
-            await log_channel.send(f"📜 Transcript: {interaction.channel.name}", file=file)
-
-        # FIX: active_tickets se user ko remove karein
-        for user_id, channel_id in list(active_tickets.items()):
-            if channel_id == interaction.channel.id:
-                del active_tickets[user_id]
-                break
+            file = discord.File(BytesIO(log_text.encode()), filename="transcript.txt")
+            await log_channel.send(f"📜 Transcript for: {interaction.channel.name} (Type: {ticket_type})", file=file)
         
         await interaction.channel.delete()
 
@@ -121,6 +126,7 @@ class TicketDropdown(discord.ui.Select):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
         user_id = interaction.user.id
+        selected_type = self.values[0]
 
         if user_id in active_tickets:
             return await interaction.followup.send("❌ You already have a ticket!", ephemeral=True)
@@ -144,16 +150,17 @@ class TicketDropdown(discord.ui.Select):
         if staff_role:
             await channel.set_permissions(staff_role, view_channel=True, send_messages=True)
 
-        active_tickets[user_id] = channel.id
+        # Ab ticket ka type save ho raha hai
+        active_tickets[user_id] = {"channel_id": channel.id, "type": selected_type}
 
         embed = discord.Embed(
             title="INTELLECT-X Support",
-            description=f"Ticket ID: {ticket_number}\nWelcome! Staff will assist you soon.",
+            description=f"Ticket ID: {ticket_number}\n**Type:** {selected_type}\nWelcome! Staff will assist you soon.",
             color=discord.Color.dark_red()
         )
 
         await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
-        await interaction.followup.send(f"✅ Ticket created: {channel.mention}", ephemeral=True)
+        await interaction.followup.send(f"✅ Ticket created for {selected_type}: {channel.mention}", ephemeral=True)
 
 class TicketView(discord.ui.View):
     def __init__(self):
