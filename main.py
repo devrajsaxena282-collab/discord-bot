@@ -96,6 +96,8 @@ class TicketDropdown(discord.ui.Select):
             discord.SelectOption(label="STREAMER PANEL", emoji="🔴"),
             discord.SelectOption(label="INTERNAL MAX", emoji="🔴"),
             discord.SelectOption(label="AIMKILL EXE", emoji="🔴"),
+
+discord.SelectOption(label="OPTIMIZATION", emoji="🔴"),
             discord.SelectOption(label="WINDOWS 10 PRO", emoji="🔴"),
             discord.SelectOption(label="WINDOWS 11 PRO", emoji="🔴"),
             discord.SelectOption(label="MS OFFICE 2021 PREMIUM", emoji="🔴"),
