@@ -118,7 +118,6 @@ class TicketDropdown(discord.ui.Select):
             discord.SelectOption(label="BR MOD", emoji="🔴"),
             discord.SelectOption(label="HG CHEATS", emoji="🔴"),
             discord.SelectOption(label="KOS ROOT", emoji="🔴"),
-            discord.SelectOption(label="FREE KEY", emoji="🔴"),
         ]
         super().__init__(placeholder="Select Ticket Type", options=options)
 
@@ -184,7 +183,16 @@ Welcome to the official ticket system of INTELLECT-X.
 """,
         color=discord.Color.dark_red()
     )
-    embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
+
+    # **1. Right Side Logo (Thumbnail)**
+    # Apne logo ka seedha link yahan dalein
+    embed.set_thumbnail(url="")
+
+    # **2. GIF/Image above Dropdown (Set Image)**
+    # Apne GIF/Image ka seedha link yahan dalein
+    # Yeh dropdown ke upar (Embed ke bottom mein) show hoga
+    embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776709918586-a6974bf3-252a-4a29-80d3-3e02e7669114.gif")
+
     await ctx.send(embed=embed, view=TicketView())
 
 keep_alive()
