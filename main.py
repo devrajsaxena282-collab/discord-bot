@@ -6,6 +6,7 @@ import os
 from flask import Flask
 from threading import Thread
 
+# Flask server (Keep alive)
 app = Flask(__name__)
 
 @app.route("/")
@@ -20,7 +21,7 @@ def keep_alive():
     t.daemon = True
     t.start()
 
-# ---------------- BOT ----------------
+# ---------------- BOT SETUP ----------------
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -29,8 +30,8 @@ intents.guilds = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-active_tickets = {}
-ticket_count = 0  # 🔥 counter
+active_tickets = {} # Ye store karega {user_id: channel_id}
+ticket_count = 0
 
 STAFF_ROLE = "Staff"
 LOG_CHANNEL = "ticket-logs"
@@ -70,16 +71,22 @@ class TicketButtons(discord.ui.View):
         guild = interaction.guild
         log_channel = discord.utils.get(guild.text_channels, name=LOG_CHANNEL)
 
+        # Transcript
         transcript = []
         async for msg in interaction.channel.history(limit=200):
             transcript.append(f"{msg.author}: {msg.content}")
-
         text = "\n".join(transcript[::-1])
 
         if log_channel:
             file = discord.File(BytesIO(text.encode()), filename="transcript.txt")
             await log_channel.send(f"📜 Transcript: {interaction.channel.name}", file=file)
 
+        # FIX: active_tickets se user ko remove karein
+        for user_id, channel_id in list(active_tickets.items()):
+            if channel_id == interaction.channel.id:
+                del active_tickets[user_id]
+                break
+        
         await interaction.channel.delete()
 
 # ---------------- DROPDOWN ----------------
@@ -96,8 +103,7 @@ class TicketDropdown(discord.ui.Select):
             discord.SelectOption(label="STREAMER PANEL", emoji="🔴"),
             discord.SelectOption(label="INTERNAL MAX", emoji="🔴"),
             discord.SelectOption(label="AIMKILL EXE", emoji="🔴"),
-
-discord.SelectOption(label="OPTIMIZATION", emoji="🔴"),
+            discord.SelectOption(label="OPTIMIZATION", emoji="🔴"),
             discord.SelectOption(label="WINDOWS 10 PRO", emoji="🔴"),
             discord.SelectOption(label="WINDOWS 11 PRO", emoji="🔴"),
             discord.SelectOption(label="MS OFFICE 2021 PREMIUM", emoji="🔴"),
@@ -112,7 +118,6 @@ discord.SelectOption(label="OPTIMIZATION", emoji="🔴"),
 
     async def callback(self, interaction: discord.Interaction):
         global ticket_count
-
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
         user_id = interaction.user.id
@@ -124,7 +129,6 @@ discord.SelectOption(label="OPTIMIZATION", emoji="🔴"),
         if not category:
             return await interaction.followup.send("❌ Create 'ticket' category first", ephemeral=True)
 
-        # 🔥 ticket number system
         ticket_count += 1
         ticket_number = str(ticket_count).zfill(3)
 
@@ -151,14 +155,10 @@ discord.SelectOption(label="OPTIMIZATION", emoji="🔴"),
         await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
         await interaction.followup.send(f"✅ Ticket created: {channel.mention}", ephemeral=True)
 
-# ---------------- VIEW ----------------
-
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(TicketDropdown())
-
-# ---------------- PANEL ----------------
 
 @bot.command()
 async def panel(ctx):
@@ -176,18 +176,11 @@ Welcome to the official ticket system of INTELLECT-X.
 """,
         color=discord.Color.dark_red()
     )
-
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
-    embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
-
     await ctx.send(embed=embed, view=TicketView())
 
-# ---------------- RUN ----------------
-
 keep_alive()
-
 TOKEN = os.getenv("DISCORD_TOKEN")
-
 if TOKEN:
     bot.run(TOKEN)
 else:
