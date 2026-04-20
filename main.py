@@ -96,6 +96,15 @@ class TicketDropdown(discord.ui.Select):
             discord.SelectOption(label="STREAMER PANEL", emoji="🔴"),
             discord.SelectOption(label="INTERNAL MAX", emoji="🔴"),
             discord.SelectOption(label="AIMKILL EXE", emoji="🔴"),
+            discord.SelectOption(label="WINDOWS 10 PRO", emoji="🔴"),
+            discord.SelectOption(label="WINDOWS 11 PRO", emoji="🔴"),
+            discord.SelectOption(label="MS OFFICE 2021 PREMIUM", emoji="🔴"),
+            discord.SelectOption(label="MS 365 PREMIUM", emoji="🔴"),
+            discord.SelectOption(label="DEVICE ROOTING", emoji="🔴"),
+            discord.SelectOption(label="DRIP CLIENT", emoji="🔴"),
+            discord.SelectOption(label="BR MOD", emoji="🔴"),
+            discord.SelectOption(label="HG CHEATS", emoji="🔴"),
+            discord.SelectOption(label="KOS ROOT", emoji="🔴"),
         ]
         super().__init__(placeholder="Select Ticket Type", options=options)
 
