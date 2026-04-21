@@ -183,7 +183,16 @@ Welcome to the official ticket system of INTELLECT-X.
 """,
         color=discord.Color.dark_red()
     )
+
+    # **1. Right Side Logo (Thumbnail)**
+    # Apne logo ka seedha link yahan dalein
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
+
+    # **2. GIF/Image above Dropdown (Set Image)**
+    # Apne GIF/Image ka seedha link yahan dalein
+    # Yeh dropdown ke upar (Embed ke bottom mein) show hoga
+    embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
+
     await ctx.send(embed=embed, view=TicketView())
 
 keep_alive()
