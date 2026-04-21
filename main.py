@@ -1,100 +1,40 @@
 import discord
 from discord.ext import commands
-from datetime import datetime
 from io import BytesIO
 import os
 from flask import Flask
 from threading import Thread
 
-# Flask server (Keep alive)
+# --- FLASK KEEP ALIVE ---
 app = Flask(__name__)
-
 @app.route("/")
-def home():
-    return "OK"
-
-def run():
-    app.run(host="0.0.0.0", port=8080, debug=False, use_reloader=False)
-
+def home(): return "OK"
+def run(): app.run(host="0.0.0.0", port=8080, debug=False, use_reloader=False)
 def keep_alive():
     t = Thread(target=run)
     t.daemon = True
     t.start()
 
-# ---------------- BOT SETUP ----------------
-
+# --- BOT CONFIG ---
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.guilds = True
-
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# active_tickets format: {user_id: {"channel_id": id, "type": "panel_name"}}
-active_tickets = {} 
-ticket_count = 0
-
-STAFF_ROLE = "Staff"
-LOG_CHANNEL = "ticket-logs"
-
-@bot.event
-async def on_ready():
-    print(f"🔥 Bot Ready: {bot.user}")
-
-# ---------------- PURGE ----------------
-
-@bot.command()
-@commands.has_permissions(manage_messages=True)
-async def purge(ctx, amount: int = 100):
-    await ctx.channel.purge(limit=amount)
-    await ctx.send(f"🧹 {amount} messages deleted!", delete_after=3)
-
-# ---------------- BUTTONS ----------------
+# --- VIEWS & DROPDOWNS ---
 
 class TicketButtons(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Claim", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Claim", style=discord.ButtonStyle.primary, custom_id="c_claim")
     async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
-        role = discord.utils.get(interaction.guild.roles, name=STAFF_ROLE)
-        if not role or role not in interaction.user.roles:
-            return await interaction.response.send_message("❌ Staff only!", ephemeral=True)
-        await interaction.response.send_message(f"👤 {interaction.user.mention} claimed this ticket")
+        await interaction.response.send_message(f"👤 {interaction.user.mention} has claimed this ticket.", ephemeral=True)
 
-    @discord.ui.button(label="Verify Payment", style=discord.ButtonStyle.success)
-    async def verify(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(f"💰 Payment verified by {interaction.user.mention}")
-
-    @discord.ui.button(label="Close", style=discord.ButtonStyle.danger)
+    @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, custom_id="c_close")
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
-        guild = interaction.guild
-        log_channel = discord.utils.get(guild.text_channels, name=LOG_CHANNEL)
-
-        # Ticket Type nikaalna aur active_tickets se delete karna
-        ticket_type = "Unknown"
-        for user_id, data in list(active_tickets.items()):
-            if data["channel_id"] == interaction.channel.id:
-                ticket_type = data["type"]
-                del active_tickets[user_id]
-                break
-
-        # Transcript
-        transcript = []
-        async for msg in interaction.channel.history(limit=200):
-            transcript.append(f"{msg.author}: {msg.content}")
-        
-        # Log mein type add karna
-        log_text = f"Ticket Type: {ticket_type}\n\n" + "\n".join(transcript[::-1])
-
-        if log_channel:
-            file = discord.File(BytesIO(log_text.encode()), filename="transcript.txt")
-            await log_channel.send(f"📜 Transcript for: {interaction.channel.name} (Type: {ticket_type})", file=file)
-        
         await interaction.channel.delete()
-
-# ---------------- DROPDOWN ----------------
 
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
@@ -118,90 +58,61 @@ class TicketDropdown(discord.ui.Select):
             discord.SelectOption(label="BR MOD", emoji="🔴"),
             discord.SelectOption(label="HG CHEATS", emoji="🔴"),
             discord.SelectOption(label="KOS ROOT", emoji="🔴"),
-
-discord.SelectOption(label="DC BOTS", emoji="🔴"),
-
-discord.SelectOption(label="FREE KEY", emoji="🔴"),
         ]
-        super().__init__(placeholder="Select Ticket Type", options=options)
+        super().__init__(placeholder="Select Ticket Type", options=options, custom_id="c_dropdown")
 
     async def callback(self, interaction: discord.Interaction):
-        global ticket_count
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
-        user_id = interaction.user.id
-        selected_type = self.values[0]
-
-        if user_id in active_tickets:
-            return await interaction.followup.send("❌ You already have a ticket!", ephemeral=True)
-
         category = discord.utils.get(guild.categories, name="ticket")
+        
         if not category:
-            return await interaction.followup.send("❌ Create 'ticket' category first", ephemeral=True)
-
-        ticket_count += 1
-        ticket_number = str(ticket_count).zfill(3)
-
+            return await interaction.followup.send("❌ 'ticket' category not found!", ephemeral=True)
+        
+        # Permissions setup to make sure channel is visible
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_messages=True),
+            guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True, manage_channels=True)
+        }
+        
         channel = await guild.create_text_channel(
-            name=f"ticket-{ticket_number}",
-            category=category
+            name=f"ticket-{interaction.user.name}", 
+            category=category,
+            overwrites=overwrites
         )
-
-        await channel.set_permissions(guild.default_role, view_channel=False)
-        await channel.set_permissions(interaction.user, view_channel=True, send_messages=True)
-
-        staff_role = discord.utils.get(guild.roles, name=STAFF_ROLE)
-        if staff_role:
-            await channel.set_permissions(staff_role, view_channel=True, send_messages=True)
-
-        # Ab ticket ka type save ho raha hai
-        active_tickets[user_id] = {"channel_id": channel.id, "type": selected_type}
-
+        
         embed = discord.Embed(
-            title="INTELLECT-X Support",
-            description=f"Ticket ID: {ticket_number}\n**Type:** {selected_type}\nWelcome! Staff will assist you soon.",
+            title="Ticket Support", 
+            description=f"Welcome {interaction.user.mention}!\nSelected Type: **{self.values[0]}**\nStaff will be with you shortly.",
             color=discord.Color.dark_red()
         )
-
-        await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
-        await interaction.followup.send(f"✅ Ticket created for {selected_type}: {channel.mention}", ephemeral=True)
+        await channel.send(embed=embed, view=TicketButtons())
+        await interaction.followup.send(f"✅ Ticket created: {channel.mention}", ephemeral=True)
 
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(TicketDropdown())
 
+# --- BOT EVENTS ---
+@bot.event
+async def on_ready():
+    bot.add_view(TicketView())
+    bot.add_view(TicketButtons())
+    print(f"🔥 Bot is online as {bot.user}")
+
 @bot.command()
 async def panel(ctx):
     embed = discord.Embed(
         title="INTELLECT-X – Official Tickets System",
-        description="""
-Welcome to the official ticket system of INTELLECT-X.
-
-━━━━━━━━━━━━━━━━━━━━━━
-🧡 Rules:
-• Only support & purchase tickets
-• No spam
-• Respect staff
-━━━━━━━━━━━━━━━━━━━━━━
-""",
+        description="Welcome to the official support system. Please select your inquiry below.",
         color=discord.Color.dark_red()
     )
-
-    # **1. Right Side Logo (Thumbnail)**
-    # Apne logo ka seedha link yahan dalein
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
-
-    # **2. GIF/Image above Dropdown (Set Image)**
-    # Apne GIF/Image ka seedha link yahan dalein
-    # Yeh dropdown ke upar (Embed ke bottom mein) show hoga
     embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
-
     await ctx.send(embed=embed, view=TicketView())
 
+# --- RUN ---
 keep_alive()
-TOKEN = os.getenv("DISCORD_TOKEN")
-if TOKEN:
-    bot.run(TOKEN)
-else:
-    print("❌ DISCORD_TOKEN missing")
+bot.run(os.getenv("DISCORD_TOKEN"))
