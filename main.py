@@ -2,6 +2,18 @@ import discord
 from discord.ext import commands
 from io import BytesIO
 import os
+from flask import Flask
+from threading import Thread
+
+# --- Flask Server (Keep Alive) ---
+app = Flask(__name__)
+@app.route("/")
+def home(): return "OK"
+def run(): app.run(host="0.0.0.0", port=8080)
+def keep_alive():
+    t = Thread(target=run)
+    t.daemon = True
+    t.start()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -26,7 +38,6 @@ class TicketButtons(discord.ui.View):
     @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, custom_id="btn_close")
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        # Log Transcript
         log_channel = discord.utils.get(interaction.guild.text_channels, name="ticket-logs")
         if log_channel:
             transcript = []
@@ -40,33 +51,22 @@ class TicketButtons(discord.ui.View):
 # ----------------- DROPDOWN -----------------
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
-        options = [
-            discord.SelectOption(label=p, emoji="🔴") for p in [
-                "BASIC PANEL", "UID BYPASS", "EMULATOR BYPASS", "CUSTOM PANEL", 
-                "AIMSILENT EXE", "AIMSILENT APK", "STREAMER PANEL", "INTERNAL MAX", 
-                "AIMKILL EXE", "OPTIMIZATION", "WINDOWS 10 PRO", "WINDOWS 11 PRO", 
-                "MS OFFICE 2021 PREMIUM", "MS 365 PREMIUM", "DEVICE ROOTING", 
-                "DRIP CLIENT", "BR MOD", "HG CHEATS", "KOS ROOT"
-            ]
-        ]
+        options = [discord.SelectOption(label=p, emoji="🔴") for p in ["BASIC PANEL", "UID BYPASS", "EMULATOR BYPASS", "CUSTOM PANEL", "AIMSILENT EXE", "AIMSILENT APK", "STREAMER PANEL", "INTERNAL MAX", "AIMKILL EXE", "OPTIMIZATION", "WINDOWS 10 PRO", "WINDOWS 11 PRO", "MS OFFICE 2021 PREMIUM", "MS 365 PREMIUM", "DEVICE ROOTING", "DRIP CLIENT", "BR MOD", "HG CHEATS", "KOS ROOT"]]
         super().__init__(placeholder="Select Ticket Type", options=options, custom_id="ticket_dropdown")
 
     async def callback(self, interaction: discord.Interaction):
         channel_name = f"ticket-{interaction.user.name.lower().replace(' ', '-')}"
         existing = discord.utils.get(interaction.guild.text_channels, name=channel_name)
-        
         if existing:
             return await interaction.response.send_message(f"❌ You already have a ticket: {existing.mention}", ephemeral=True)
 
         await interaction.response.defer(ephemeral=True)
         category = discord.utils.get(interaction.guild.categories, name="ticket")
-        
         overwrites = {
             interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
             interaction.user: discord.PermissionOverwrite(view_channel=True, read_messages=True, send_messages=True),
             interaction.guild.me: discord.PermissionOverwrite(view_channel=True, manage_channels=True)
         }
-        
         channel = await interaction.guild.create_text_channel(name=channel_name, category=category, overwrites=overwrites)
         embed = discord.Embed(title="INTELLECT-X Support", description=f"Type: **{self.values[0]}**\nWelcome! Staff will assist soon.", color=discord.Color.dark_red())
         await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
@@ -77,7 +77,6 @@ class TicketView(discord.ui.View):
         super().__init__(timeout=None)
         self.add_item(TicketDropdown())
 
-# ----------------- BOT EVENTS -----------------
 @bot.event
 async def on_ready():
     bot.add_view(TicketView())
@@ -92,15 +91,6 @@ async def panel(ctx):
     await ctx.send(embed=embed, view=TicketView())
 
 # --- RUN ---
-keep_alive()
-
-# Token fetch karne ka safe method
+keep_alive() # Ab ye define ho gaya hai
 TOKEN = os.environ.get("DISCORD_TOKEN")
-
-if not TOKEN:
-    print("❌ ERROR: DISCORD_TOKEN environment variable nahi mila!")
-else:
-    try:
-        bot.run(TOKEN)
-    except Exception as e:
-        print(f"❌ Critical Error: {e}")
+if TOKEN: bot.run(TOKEN)
