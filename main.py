@@ -91,4 +91,16 @@ async def panel(ctx):
     embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
     await ctx.send(embed=embed, view=TicketView())
 
-bot.run(os.getenv("DISCORD_TOKEN"))
+# --- RUN ---
+keep_alive()
+
+# Token fetch karne ka safe method
+TOKEN = os.environ.get("DISCORD_TOKEN")
+
+if not TOKEN:
+    print("❌ ERROR: DISCORD_TOKEN environment variable nahi mila!")
+else:
+    try:
+        bot.run(TOKEN)
+    except Exception as e:
+        print(f"❌ Critical Error: {e}")
