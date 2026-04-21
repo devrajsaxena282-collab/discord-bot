@@ -118,6 +118,9 @@ class TicketDropdown(discord.ui.Select):
             discord.SelectOption(label="BR MOD", emoji="🔴"),
             discord.SelectOption(label="HG CHEATS", emoji="🔴"),
             discord.SelectOption(label="KOS ROOT", emoji="🔴"),
+
+discord.SelectOption(label="DC BOTS", emoji="🔴"),
+            discord.SelectOption(label="FREE KEY", emoji="🔴"),
         ]
         super().__init__(placeholder="Select Ticket Type", options=options)
 
