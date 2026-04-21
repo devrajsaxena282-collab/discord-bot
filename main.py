@@ -19,7 +19,6 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.guilds = True
-
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ----------------- BUTTONS -----------------
@@ -29,23 +28,14 @@ class TicketButtons(discord.ui.View):
 
     @discord.ui.button(label="Claim", style=discord.ButtonStyle.primary, custom_id="btn_claim")
     async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(f"👤 {interaction.user.mention} has claimed this ticket.", ephemeral=True)
+        await interaction.response.send_message("Ticket claimed!", ephemeral=True)
 
     @discord.ui.button(label="Verify Payment", style=discord.ButtonStyle.success, custom_id="btn_verify")
     async def verify(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(f"💰 Payment verified by {interaction.user.mention}", ephemeral=True)
+        await interaction.response.send_message("Payment verified!", ephemeral=True)
 
     @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, custom_id="btn_close")
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer()
-        log_channel = discord.utils.get(interaction.guild.text_channels, name="ticket-logs")
-        if log_channel:
-            transcript = []
-            async for msg in interaction.channel.history(limit=200):
-                transcript.append(f"{msg.author}: {msg.content}")
-            file = discord.File(BytesIO("\n".join(transcript[::-1]).encode()), filename="transcript.txt")
-            await log_channel.send(f"📜 Transcript for {interaction.channel.name}", file=file)
-        
         await interaction.channel.delete()
 
 # ----------------- DROPDOWN -----------------
@@ -55,22 +45,36 @@ class TicketDropdown(discord.ui.Select):
         super().__init__(placeholder="Select Ticket Type", options=options, custom_id="ticket_dropdown")
 
     async def callback(self, interaction: discord.Interaction):
-        channel_name = f"ticket-{interaction.user.name.lower().replace(' ', '-')}"
-        existing = discord.utils.get(interaction.guild.text_channels, name=channel_name)
-        if existing:
-            return await interaction.response.send_message(f"❌ You already have a ticket: {existing.mention}", ephemeral=True)
-
         await interaction.response.defer(ephemeral=True)
-        category = discord.utils.get(interaction.guild.categories, name="ticket")
+        guild = interaction.guild
+        user = interaction.user
+        
+        # 1. Category verify karein
+        category = discord.utils.get(guild.categories, name="ticket")
+        if not category:
+            return await interaction.followup.send("❌ 'ticket' category nahi mili!", ephemeral=True)
+        
+        # 2. Permissions override
         overwrites = {
-            interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            interaction.user: discord.PermissionOverwrite(view_channel=True, read_messages=True, send_messages=True),
-            interaction.guild.me: discord.PermissionOverwrite(view_channel=True, manage_channels=True)
+            guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            user: discord.PermissionOverwrite(view_channel=True, read_messages=True, send_messages=True),
+            guild.me: discord.PermissionOverwrite(view_channel=True, manage_channels=True)
         }
-        channel = await interaction.guild.create_text_channel(name=channel_name, category=category, overwrites=overwrites)
-        embed = discord.Embed(title="INTELLECT-X Support", description=f"Type: **{self.values[0]}**\nWelcome! Staff will assist soon.", color=discord.Color.dark_red())
-        await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
-        await interaction.followup.send(f"✅ Ticket created: {channel.mention}", ephemeral=True)
+        
+        # 3. Channel create karein
+        try:
+            channel = await guild.create_text_channel(
+                name=f"ticket-{user.name}",
+                category=category,
+                overwrites=overwrites
+            )
+            
+            # Embed bhejein
+            embed = discord.Embed(title="INTELLECT-X Support", description=f"Type: **{self.values[0]}**", color=discord.Color.dark_red())
+            await channel.send(content=user.mention, embed=embed, view=TicketButtons())
+            await interaction.followup.send(f"✅ Ticket created: {channel.mention}", ephemeral=True)
+        except Exception as e:
+            await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
 
 class TicketView(discord.ui.View):
     def __init__(self):
@@ -90,7 +94,5 @@ async def panel(ctx):
     embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
     await ctx.send(embed=embed, view=TicketView())
 
-# --- RUN ---
-keep_alive() # Ab ye define ho gaya hai
-TOKEN = os.environ.get("DISCORD_TOKEN")
-if TOKEN: bot.run(TOKEN)
+keep_alive()
+bot.run(os.environ.get("DISCORD_TOKEN"))
