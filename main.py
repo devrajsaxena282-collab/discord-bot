@@ -2,92 +2,74 @@ import discord
 from discord.ext import commands
 from io import BytesIO
 import os
-from flask import Flask
-from threading import Thread
 
-# --- FLASK KEEP ALIVE ---
-app = Flask(__name__)
-@app.route("/")
-def home(): return "OK"
-def run(): app.run(host="0.0.0.0", port=8080, debug=False, use_reloader=False)
-def keep_alive():
-    t = Thread(target=run)
-    t.daemon = True
-    t.start()
-
-# --- BOT CONFIG ---
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.guilds = True
+
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# --- VIEWS & DROPDOWNS ---
-
+# ----------------- BUTTONS -----------------
 class TicketButtons(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Claim", style=discord.ButtonStyle.primary, custom_id="c_claim")
+    @discord.ui.button(label="Claim", style=discord.ButtonStyle.primary, custom_id="btn_claim")
     async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(f"👤 {interaction.user.mention} has claimed this ticket.", ephemeral=True)
 
-    @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, custom_id="c_close")
+    @discord.ui.button(label="Verify Payment", style=discord.ButtonStyle.success, custom_id="btn_verify")
+    async def verify(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(f"💰 Payment verified by {interaction.user.mention}", ephemeral=True)
+
+    @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, custom_id="btn_close")
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        # Log Transcript
+        log_channel = discord.utils.get(interaction.guild.text_channels, name="ticket-logs")
+        if log_channel:
+            transcript = []
+            async for msg in interaction.channel.history(limit=200):
+                transcript.append(f"{msg.author}: {msg.content}")
+            file = discord.File(BytesIO("\n".join(transcript[::-1]).encode()), filename="transcript.txt")
+            await log_channel.send(f"📜 Transcript for {interaction.channel.name}", file=file)
+        
         await interaction.channel.delete()
 
+# ----------------- DROPDOWN -----------------
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="BASIC PANEL", emoji="🔴"),
-            discord.SelectOption(label="UID BYPASS", emoji="🔴"),
-            discord.SelectOption(label="EMULATOR BYPASS", emoji="🔴"),
-            discord.SelectOption(label="CUSTOM PANEL", emoji="🔴"),
-            discord.SelectOption(label="AIMSILENT EXE", emoji="🔴"),
-            discord.SelectOption(label="AIMSILENT APK", emoji="🔴"),
-            discord.SelectOption(label="STREAMER PANEL", emoji="🔴"),
-            discord.SelectOption(label="INTERNAL MAX", emoji="🔴"),
-            discord.SelectOption(label="AIMKILL EXE", emoji="🔴"),
-            discord.SelectOption(label="OPTIMIZATION", emoji="🔴"),
-            discord.SelectOption(label="WINDOWS 10 PRO", emoji="🔴"),
-            discord.SelectOption(label="WINDOWS 11 PRO", emoji="🔴"),
-            discord.SelectOption(label="MS OFFICE 2021 PREMIUM", emoji="🔴"),
-            discord.SelectOption(label="MS 365 PREMIUM", emoji="🔴"),
-            discord.SelectOption(label="DEVICE ROOTING", emoji="🔴"),
-            discord.SelectOption(label="DRIP CLIENT", emoji="🔴"),
-            discord.SelectOption(label="BR MOD", emoji="🔴"),
-            discord.SelectOption(label="HG CHEATS", emoji="🔴"),
-            discord.SelectOption(label="KOS ROOT", emoji="🔴"),
+            discord.SelectOption(label=p, emoji="🔴") for p in [
+                "BASIC PANEL", "UID BYPASS", "EMULATOR BYPASS", "CUSTOM PANEL", 
+                "AIMSILENT EXE", "AIMSILENT APK", "STREAMER PANEL", "INTERNAL MAX", 
+                "AIMKILL EXE", "OPTIMIZATION", "WINDOWS 10 PRO", "WINDOWS 11 PRO", 
+                "MS OFFICE 2021 PREMIUM", "MS 365 PREMIUM", "DEVICE ROOTING", 
+                "DRIP CLIENT", "BR MOD", "HG CHEATS", "KOS ROOT"
+            ]
         ]
-        super().__init__(placeholder="Select Ticket Type", options=options, custom_id="c_dropdown")
+        super().__init__(placeholder="Select Ticket Type", options=options, custom_id="ticket_dropdown")
 
     async def callback(self, interaction: discord.Interaction):
+        channel_name = f"ticket-{interaction.user.name.lower().replace(' ', '-')}"
+        existing = discord.utils.get(interaction.guild.text_channels, name=channel_name)
+        
+        if existing:
+            return await interaction.response.send_message(f"❌ You already have a ticket: {existing.mention}", ephemeral=True)
+
         await interaction.response.defer(ephemeral=True)
-        guild = interaction.guild
-        category = discord.utils.get(guild.categories, name="ticket")
+        category = discord.utils.get(interaction.guild.categories, name="ticket")
         
-        if not category:
-            return await interaction.followup.send("❌ 'ticket' category not found!", ephemeral=True)
-        
-        # Permissions setup to make sure channel is visible
         overwrites = {
-            guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_messages=True),
-            guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True, manage_channels=True)
+            interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            interaction.user: discord.PermissionOverwrite(view_channel=True, read_messages=True, send_messages=True),
+            interaction.guild.me: discord.PermissionOverwrite(view_channel=True, manage_channels=True)
         }
         
-        channel = await guild.create_text_channel(
-            name=f"ticket-{interaction.user.name}", 
-            category=category,
-            overwrites=overwrites
-        )
-        
-        embed = discord.Embed(
-            title="Ticket Support", 
-            description=f"Welcome {interaction.user.mention}!\nSelected Type: **{self.values[0]}**\nStaff will be with you shortly.",
-            color=discord.Color.dark_red()
-        )
-        await channel.send(embed=embed, view=TicketButtons())
+        channel = await interaction.guild.create_text_channel(name=channel_name, category=category, overwrites=overwrites)
+        embed = discord.Embed(title="INTELLECT-X Support", description=f"Type: **{self.values[0]}**\nWelcome! Staff will assist soon.", color=discord.Color.dark_red())
+        await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
         await interaction.followup.send(f"✅ Ticket created: {channel.mention}", ephemeral=True)
 
 class TicketView(discord.ui.View):
@@ -95,24 +77,18 @@ class TicketView(discord.ui.View):
         super().__init__(timeout=None)
         self.add_item(TicketDropdown())
 
-# --- BOT EVENTS ---
+# ----------------- BOT EVENTS -----------------
 @bot.event
 async def on_ready():
     bot.add_view(TicketView())
     bot.add_view(TicketButtons())
-    print(f"🔥 Bot is online as {bot.user}")
+    print(f"🔥 Bot Online: {bot.user}")
 
 @bot.command()
 async def panel(ctx):
-    embed = discord.Embed(
-        title="INTELLECT-X – Official Tickets System",
-        description="Welcome to the official support system. Please select your inquiry below.",
-        color=discord.Color.dark_red()
-    )
+    embed = discord.Embed(title="INTELLECT-X – Official Tickets", description="Select your inquiry below.", color=discord.Color.dark_red())
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
     embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
     await ctx.send(embed=embed, view=TicketView())
 
-# --- RUN ---
-keep_alive()
 bot.run(os.getenv("DISCORD_TOKEN"))
