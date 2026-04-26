@@ -247,14 +247,20 @@ class PurchasePanelSelect(discord.ui.Select):
         super().__init__(placeholder="Select Purchase Panel", options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        # 🔥 FIX: proper response handling
         try:
-            if not interaction.response.is_done():
-                await interaction.response.defer(ephemeral=True)
+            # ✅ ALWAYS safe respond FIRST
+            await interaction.response.defer(ephemeral=True)
         except:
             pass
 
-        await create_ticket(interaction, self.values[0])
+        try:
+            await create_ticket(interaction, self.values[0])
+        except Exception as e:
+            # 🔥 THIS stops interaction failed
+            try:
+                await interaction.followup.send(f"❌ Error: {str(e)}", ephemeral=True)
+            except:
+                pass
 # ---------------- SALE PANEL ----------------
 class SalePanelView(discord.ui.View):
     def __init__(self):
