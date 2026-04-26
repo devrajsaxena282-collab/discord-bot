@@ -132,6 +132,8 @@ async def create_ticket(interaction, selected_type):
     embed = discord.Embed(
         title="🎫 INTELLECT-X TICKET OPENED",
         description=f"""
+🎟️ **Ticket Number:** #{num}
+
 👋 Welcome {interaction.user.mention}
 
 📌 **Ticket Type:** {selected_type}
