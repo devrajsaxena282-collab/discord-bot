@@ -83,15 +83,19 @@ async def auto_close(channel):
     except:
         pass
 
-# ---------------- CREATE TICKET ----------------
+# ---------------- CREATE TICKET (ONLY FIX HERE) ----------------
 async def create_ticket(interaction, selected_type):
     global ticket_count
+
+    # 🔥 FIX 1: ALWAYS DEFER FIRST (IMPORTANT)
+    if not interaction.response.is_done():
+        await interaction.response.defer(ephemeral=True)
 
     existing = get_user_ticket(interaction.user.id)
     if existing:
         channel = interaction.guild.get_channel(existing[1])
         if channel:
-            return await interaction.response.send_message(
+            return await interaction.followup.send(
                 "❌ You already have a ticket!", ephemeral=True
             )
         else:
@@ -99,7 +103,7 @@ async def create_ticket(interaction, selected_type):
 
     category = discord.utils.get(interaction.guild.categories, name=CATEGORY)
     if not category:
-        return await interaction.response.send_message(
+        return await interaction.followup.send(
             "❌ Create 'ticket' category first", ephemeral=True
         )
 
@@ -122,7 +126,7 @@ async def create_ticket(interaction, selected_type):
     add_ticket(interaction.user.id, channel.id, ticket_count, selected_type)
     active_tickets[interaction.user.id] = {"channel_id": channel.id, "type": selected_type}
 
-    # ---------------- CHANNEL MESSAGE (UPDATED ONLY) ----------------
+    # ---------------- CHANNEL MESSAGE ----------------
     channel_embed = discord.Embed(
         title="🎫 INTELLECT-X TICKET OPENED",
         description=f"""
@@ -164,7 +168,8 @@ async def create_ticket(interaction, selected_type):
 
         await log_channel.send(embed=log_embed)
 
-    await interaction.response.send_message(
+    # 🔥 FIX 2: SAFE FOLLOWUP RESPONSE
+    await interaction.followup.send(
         f"✅ Ticket created: {channel.mention}",
         ephemeral=True
     )
@@ -298,54 +303,9 @@ class TicketDropdown(discord.ui.Select):
         elif choice == "SALE PANEL":
             await interaction.response.send_message("🔥 SALE PANEL OPENED", view=SalePanelView(), ephemeral=True)
 
-# ---------------- MAIN VIEW ----------------
-class TicketView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.add_item(TicketDropdown())
-
-# ---------------- PANEL COMMAND ----------------
-panel_message_id = None
-
-@bot.command()
-async def panel(ctx):
-    global panel_message_id
-
-    embed = discord.Embed(
-        title="INTELLECT-X – Official Tickets System",
-        description="""
-Welcome to the official ticket system of INTELLECT-X.
-
-━━━━━━━━━━━━━━━━━━━━━━
-🧡 Rules:
-* Only support & purchase tickets
-* No spam
-* Respect staff
-━━━━━━━━━━━━━━━━━━━━━━
-""",
-        color=discord.Color.dark_red()
-    )
-
-    embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
-    embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
-
-    view = TicketView()
-
-    if panel_message_id:
-        try:
-            msg = await ctx.channel.fetch_message(panel_message_id)
-            await msg.edit(embed=embed, view=view)
-            return
-        except:
-            panel_message_id = None
-
-    msg = await ctx.send(embed=embed, view=view)
-    panel_message_id = msg.id
-
 # ---------------- READY ----------------
 @bot.event
 async def on_ready():
-    bot.add_view(TicketView())
     print(f"🔥 Logged in as {bot.user}")
 
 # ---------------- RUN ----------------
