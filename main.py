@@ -130,7 +130,7 @@ async def create_ticket(interaction, selected_type):
 
     await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
 
-    # ---------------- 🔥 LOG SYSTEM ADDED (ONLY ADDITION) ----------------
+    # ---------------- 🔥 LOG SYSTEM (FIXED ONLY) ----------------
     log_channel = discord.utils.get(interaction.guild.text_channels, name=LOG_CHANNEL)
 
     if log_channel:
@@ -142,7 +142,7 @@ async def create_ticket(interaction, selected_type):
 📌 **Type:** {selected_type}
 
 ━━━━━━━━━━━━━━━━━━━━━━
-👋 Welcome! Staff will be soon as soon.
+👋 Welcome! Staff will be with you soon.
 ━━━━━━━━━━━━━━━━━━━━━━
 """,
             color=discord.Color.dark_red()
