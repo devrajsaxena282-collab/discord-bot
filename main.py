@@ -126,39 +126,52 @@ async def create_ticket(interaction, selected_type):
 
 # ---------------- BUTTONS ----------------
 class TicketButtons(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
+    def _init_(self):
+        super()._init_(timeout=None)
+
+    @discord.ui.button(label="Claim", style=discord.ButtonStyle.primary)
+    async def claim(self, interaction: discord.Interaction, button: discord.ui.Button):
+        role = discord.utils.get(interaction.guild.roles, name=STAFF_ROLE)
+        if not role or role not in interaction.user.roles:
+            return await interaction.response.send_message("❌ Staff only!", ephemeral=True)
+        await interaction.response.send_message(f"👤 {interaction.user.mention} claimed this ticket")
+
+    @discord.ui.button(label="Verify Payment", style=discord.ButtonStyle.success)
+    async def verify(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(f"💰 Payment verified by {interaction.user.mention}")
 
     @discord.ui.button(label="Close", style=discord.ButtonStyle.danger)
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
+        guild = interaction.guild
+        log_channel = discord.utils.get(guild.text_channels, name=LOG_CHANNEL)
 
-        log_channel = discord.utils.get(interaction.guild.text_channels, name=LOG_CHANNEL)
-        data = get_ticket_by_channel(interaction.channel.id)
-
-        ticket_number = interaction.channel.name.split("-")[-1]
-        user_name = "Unknown"
         ticket_type = "Unknown"
+        user_to_remove = None
 
-        if data:
-            user = interaction.guild.get_member(data[0])
-            if user:
-                user_name = user.name
-            ticket_type = data[3]
+        for user_id, data in active_tickets.items():
+            if data["channel_id"] == interaction.channel.id:
+                ticket_type = data["type"]
+                user_to_remove = user_id
+                break
 
-        msgs = []
-        async for m in interaction.channel.history(limit=200):
-            msgs.append(f"{m.author}: {m.content}")
+        if user_to_remove:
+            del active_tickets[user_to_remove]
 
-        file = discord.File(BytesIO("\n".join(msgs[::-1]).encode()), filename="transcript.txt")
+        # Transcript
+        transcript = []
+        async for msg in interaction.channel.history(limit=200):
+            transcript.append(f"{msg.author}: {msg.content}")
+
+        log_text = f"Ticket Type: {ticket_type}\n\n" + "\n".join(transcript[::-1])
 
         if log_channel:
+            file = discord.File(BytesIO(log_text.encode()), filename="transcript.txt")
             await log_channel.send(
-                f"📜 Ticket #{ticket_number} | User: {user_name} (Type: {ticket_type})",
+                f"📜 Transcript for: {interaction.channel.name} (Type: {ticket_type})",
                 file=file
             )
 
-        remove_ticket(interaction.channel.id)
         await interaction.channel.delete()
 
 # ---------------- PANEL DROPDOWN ----------------
