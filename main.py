@@ -6,6 +6,27 @@ import asyncio
 import os
 from flask import Flask
 from threading import Thread
+import sys
+import time
+import atexit
+
+# ---------------- SINGLE INSTANCE LOCK ----------------
+LOCK_FILE = "bot.lock"
+
+if os.path.exists(LOCK_FILE):
+    print("❌ Bot already running!")
+    sys.exit()
+
+with open(LOCK_FILE, "w") as f:
+    f.write(str(time.time()))
+
+def cleanup():
+    try:
+        os.remove(LOCK_FILE)
+    except:
+        pass
+
+atexit.register(cleanup)
 
 # ---------------- FLASK ----------------
 app = Flask(__name__)
@@ -57,6 +78,7 @@ CATEGORY = "ticket"
 
 ticket_count = 0
 active_tickets = {}
+panel_message_id = None
 
 # ---------------- AUTO CLOSE ----------------
 async def auto_close(channel):
@@ -171,7 +193,7 @@ class SupportPanelSelect(discord.ui.Select):
         ]
         super().__init__(placeholder="Select Support Type", options=options)
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction):
         await create_ticket(interaction, self.values[0])
 
 class SupportPanelView(discord.ui.View):
@@ -205,7 +227,7 @@ class PurchasePanelSelect(discord.ui.Select):
         ]
         super().__init__(placeholder="Select Purchase Panel", options=options)
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction):
         await create_ticket(interaction, self.values[0])
 
 class PurchasePanelView(discord.ui.View):
@@ -236,47 +258,27 @@ class TicketDropdown(discord.ui.Select):
         ]
         super().__init__(placeholder="Select Ticket Type", options=options)
 
-    async def callback(self, interaction: discord.Interaction):
-
+    async def callback(self, interaction):
         choice = self.values[0]
 
         if choice == "Support":
-            await interaction.response.send_message(
-                "🧡 Select Support Type:",
-                view=SupportPanelView(),
-                ephemeral=True
-            )
+            await interaction.response.send_message("🧡 Select Support Type:", view=SupportPanelView(), ephemeral=True)
 
         elif choice == "Purchase":
-            await interaction.response.send_message(
-                "🛒 Select Purchase Panel:",
-                view=PurchasePanelView(),
-                ephemeral=True
-            )
+            await interaction.response.send_message("🛒 Select Purchase Panel:", view=PurchasePanelView(), ephemeral=True)
 
         elif choice == "SALE PANEL":
-            await interaction.response.send_message(
-                "🔥 SALE PANEL OPENED",
-                view=SalePanelView(),
-                ephemeral=True
-            )
+            await interaction.response.send_message("🔥 SALE PANEL OPENED", view=SalePanelView(), ephemeral=True)
 
-# ---------------- MAIN VIEW ----------------
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(TicketDropdown())
 
-# ---------------- PANEL COMMAND (FIXED ONLY THIS PART) ----------------
-panel_message_id = None
-
+# ---------------- PANEL COMMAND (FIXED DUPLICATE ISSUE) ----------------
 @bot.command()
 async def panel(ctx):
     global panel_message_id
-
-    async for msg in ctx.channel.history(limit=10):
-        if msg.author == bot.user and msg.embeds:
-            await msg.delete()
 
     embed = discord.Embed(
         title="INTELLECT-X – Official Tickets System",
@@ -298,7 +300,7 @@ Welcome to the official ticket system of INTELLECT-X.
 
     view = TicketView()
 
-    if panel_message_id is not None:
+    if panel_message_id:
         try:
             msg = await ctx.channel.fetch_message(panel_message_id)
             await msg.edit(embed=embed, view=view)
