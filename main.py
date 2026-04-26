@@ -247,6 +247,10 @@ class PurchasePanelSelect(discord.ui.Select):
         super().__init__(placeholder="Select Purchase Panel", options=options)
 
     async def callback(self, interaction):
+        try:
+            await interaction.response.defer(ephemeral+True)
+        except:
+            pass
         await create_ticket(interaction, self.values[0])
 # ---------------- SALE PANEL ----------------
 class SalePanelView(discord.ui.View):
