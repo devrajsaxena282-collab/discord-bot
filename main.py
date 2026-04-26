@@ -294,7 +294,7 @@ Welcome to the official ticket system of INTELLECT-X.
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
     embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
 
-    await ctx.send(embed, view=TicketView())
+    await ctx.send(embed=embed, view=TicketView())
 
     # 🔥 IF MESSAGE ALREADY EXISTS → EDIT IT
     if panel_message is not None:
