@@ -175,6 +175,7 @@ class TicketButtons(discord.ui.View):
         await interaction.channel.delete()
 
 # ---------------- PANEL DROPDOWN ----------------
+
 class TicketDropdown(discord.ui.Select):
     def _init_(self):
         options = [
