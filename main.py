@@ -6,27 +6,6 @@ import asyncio
 import os
 from flask import Flask
 from threading import Thread
-import sys
-import time
-import atexit
-
-# ---------------- SINGLE INSTANCE LOCK ----------------
-LOCK_FILE = "bot.lock"
-
-if os.path.exists(LOCK_FILE):
-    print("❌ Bot already running!")
-    sys.exit()
-
-with open(LOCK_FILE, "w") as f:
-    f.write(str(time.time()))
-
-def cleanup():
-    try:
-        os.remove(LOCK_FILE)
-    except:
-        pass
-
-atexit.register(cleanup)
 
 # ---------------- FLASK ----------------
 app = Flask(__name__)
@@ -78,7 +57,6 @@ CATEGORY = "ticket"
 
 ticket_count = 0
 active_tickets = {}
-panel_message_id = None
 
 # ---------------- AUTO CLOSE ----------------
 async def auto_close(channel):
@@ -193,7 +171,7 @@ class SupportPanelSelect(discord.ui.Select):
         ]
         super().__init__(placeholder="Select Support Type", options=options)
 
-    async def callback(self, interaction):
+    async def callback(self, interaction: discord.Interaction):
         await create_ticket(interaction, self.values[0])
 
 class SupportPanelView(discord.ui.View):
@@ -227,7 +205,7 @@ class PurchasePanelSelect(discord.ui.Select):
         ]
         super().__init__(placeholder="Select Purchase Panel", options=options)
 
-    async def callback(self, interaction):
+    async def callback(self, interaction: discord.Interaction):
         await create_ticket(interaction, self.values[0])
 
 class PurchasePanelView(discord.ui.View):
@@ -258,28 +236,46 @@ class TicketDropdown(discord.ui.Select):
         ]
         super().__init__(placeholder="Select Ticket Type", options=options)
 
-    async def callback(self, interaction):
+    async def callback(self, interaction: discord.Interaction):
+
         choice = self.values[0]
 
         if choice == "Support":
-            await interaction.response.send_message("🧡 Select Support Type:", view=SupportPanelView(), ephemeral=True)
+            await interaction.response.send_message(
+                "🧡 Select Support Type:",
+                view=SupportPanelView(),
+                ephemeral=True
+            )
 
         elif choice == "Purchase":
-            await interaction.response.send_message("🛒 Select Purchase Panel:", view=PurchasePanelView(), ephemeral=True)
+            await interaction.response.send_message(
+                "🛒 Select Purchase Panel:",
+                view=PurchasePanelView(),
+                ephemeral=True
+            )
 
         elif choice == "SALE PANEL":
-            await interaction.response.send_message("🔥 SALE PANEL OPENED", view=SalePanelView(), ephemeral=True)
+            await interaction.response.send_message(
+                "🔥 SALE PANEL OPENED",
+                view=SalePanelView(),
+                ephemeral=True
+            )
 
+# ---------------- MAIN VIEW ----------------
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(TicketDropdown())
 
-# ---------------- PANEL COMMAND (FIXED DUPLICATE ISSUE) ----------------
+# ---------------- PANEL COMMAND ----------------
+panel_message_id = None
+
 @bot.command()
 async def panel(ctx):
-    global panel_message_id
-
+    async for msg in ctx.channel.history(limit=10):
+        if msg.author == bot.user and msg.embeds:
+            await msg.delete()
+            
     embed = discord.Embed(
         title="INTELLECT-X – Official Tickets System",
         description="""
@@ -298,18 +294,20 @@ Welcome to the official ticket system of INTELLECT-X.
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
     embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
 
-    view = TicketView()
+    await ctx.send(embed=embed, view=TicketView())
 
-    if panel_message_id:
+    # 🔥 IF MESSAGE ALREADY EXISTS → EDIT IT
+    if panel_message is not None:
         try:
-            msg = await ctx.channel.fetch_message(panel_message_id)
+            msg = await ctx.channel.fetch_message(panel_message)
             await msg.edit(embed=embed, view=view)
             return
         except:
-            panel_message_id = None
+            panel_message = None
 
+    # 🔥 ELSE SEND NEW ONCE ONLY
     msg = await ctx.send(embed=embed, view=view)
-    panel_message_id = msg.id
+    panel_message = msg.id
 
 # ---------------- READY ----------------
 @bot.event
