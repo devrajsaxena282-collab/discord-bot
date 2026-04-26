@@ -271,12 +271,22 @@ class TicketView(discord.ui.View):
 @bot.command()
 async def panel(ctx):
     embed = discord.Embed(
-        title="INTELLECT-X TICKET SYSTEM",
-        description="Support / Purchase / Sale System",
+        title="INTELLECT-X – Official Tickets System",
+        description="""
+Welcome to the official ticket system of INTELLECT-X.
+
+━━━━━━━━━━━━━━━━━━━━━━
+🧡 Rules:
+* Only support & purchase tickets
+* No spam
+* Respect staff
+━━━━━━━━━━━━━━━━━━━━━━
+""",
         color=discord.Color.dark_red()
     )
 
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
+    embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
 
     await ctx.send(embed=embed, view=TicketView())
 
