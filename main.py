@@ -30,7 +30,7 @@ intents.guilds = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-active_tickets = {} 
+active_tickets = {}
 ticket_count = 0
 
 STAFF_ROLE = "Staff"
@@ -75,7 +75,6 @@ class TicketButtons(discord.ui.View):
         ticket_type = "Unknown"
         user_to_remove = None
 
-        # FIX: Safe removal
         for user_id, data in active_tickets.items():
             if data["channel_id"] == interaction.channel.id:
                 ticket_type = data["type"]
@@ -135,16 +134,20 @@ class TicketDropdown(discord.ui.Select):
         user_id = interaction.user.id
         selected_type = self.values[0]
 
-        # 🔥 FIX: Channel-based check (instead of only dict)
-        existing_channel = discord.utils.get(guild.text_channels, name=f"ticket-")
+        # ✅ CHECK 1 (memory)
+        if user_id in active_tickets:
+            return await interaction.followup.send(
+                "❌ You already have an open ticket!",
+                ephemeral=True
+            )
+
+        # ✅ CHECK 2 (restart safe)
         for ch in guild.text_channels:
-            if ch.name.startswith("ticket-"):
-                perms = ch.permissions_for(interaction.user)
-                if perms.read_messages:
-                    return await interaction.followup.send(
-                        "❌ You already have an open ticket!",
-                        ephemeral=True
-                    )
+            if ch.name.startswith("ticket-") and ch.topic == str(user_id):
+                return await interaction.followup.send(
+                    "❌ You already have an open ticket!",
+                    ephemeral=True
+                )
 
         category = discord.utils.get(guild.categories, name="ticket")
         if not category:
@@ -155,7 +158,8 @@ class TicketDropdown(discord.ui.Select):
 
         channel = await guild.create_text_channel(
             name=f"ticket-{ticket_number}",
-            category=category
+            category=category,
+            topic=str(user_id)  # 🔥 IMPORTANT
         )
 
         await channel.set_permissions(guild.default_role, view_channel=False)
@@ -175,7 +179,7 @@ class TicketDropdown(discord.ui.Select):
 
         await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
         await interaction.followup.send(
-            f"✅ Ticket created for {selected_type}: {channel.mention}",
+            f"✅ Ticket created: {channel.mention}",
             ephemeral=True
         )
 
@@ -183,6 +187,8 @@ class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(TicketDropdown())
+
+# ---------------- PANEL ----------------
 
 @bot.command()
 async def panel(ctx):
@@ -205,6 +211,8 @@ Welcome to the official ticket system of INTELLECT-X.
     embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
 
     await ctx.send(embed=embed, view=TicketView())
+
+# ---------------- RUN ----------------
 
 keep_alive()
 TOKEN = os.getenv("DISCORD_TOKEN")
