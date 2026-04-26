@@ -246,11 +246,14 @@ class PurchasePanelSelect(discord.ui.Select):
         ]
         super().__init__(placeholder="Select Purchase Panel", options=options)
 
-    async def callback(self, interaction):
+    async def callback(self, interaction: discord.Interaction):
+        # 🔥 FIX: proper response handling
         try:
-            await interaction.response.defer(ephemeral+True)
+            if not interaction.response.is_done():
+                await interaction.response.defer(ephemeral=True)
         except:
             pass
+
         await create_ticket(interaction, self.values[0])
 # ---------------- SALE PANEL ----------------
 class SalePanelView(discord.ui.View):
