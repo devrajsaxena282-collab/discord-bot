@@ -38,6 +38,7 @@ LOG_CHANNEL = "ticket-logs"
 
 @bot.event
 async def on_ready():
+    bot.add_view(TicketView())
     print(f"🔥 Bot Ready: {bot.user}")
 
 # ---------------- PURGE ----------------
