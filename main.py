@@ -58,6 +58,22 @@ CATEGORY = "ticket"
 ticket_count = 0
 active_tickets = {}
 
+# ---------------- PURGE ----------------
+@bot.command()
+@commands.has_permissions(manage_messages=True)
+async def purge(ctx, amount: int = 100):
+    if amount <= 0:
+        return await ctx.send("❌ Invalid amount")
+
+    if amount > 100:
+        return await ctx.send("❌ Max limit is 100 messages")
+
+    deleted = await ctx.channel.purge(limit=amount + 1)
+    msg = await ctx.send(f"🧹 Deleted {len(deleted)-1} messages")
+    
+    await asyncio.sleep(2)
+    await msg.delete()
+    
 # ---------------- AUTO CLOSE ----------------
 async def auto_close(channel):
     await asyncio.sleep(3600)
