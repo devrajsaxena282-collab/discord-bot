@@ -270,6 +270,10 @@ class TicketView(discord.ui.View):
 # ---------------- PANEL COMMAND ----------------
 @bot.command()
 async def panel(ctx):
+    async for msg in ctx.channel.history(limit=10):
+        if msg.author == bot.user and msg.embeds:
+            await msg.delete()
+            
     embed = discord.Embed(
         title="INTELLECT-X – Official Tickets System",
         description="""
