@@ -268,6 +268,8 @@ class TicketView(discord.ui.View):
         self.add_item(TicketDropdown())
 
 # ---------------- PANEL COMMAND ----------------
+panel_message_id = None
+
 @bot.command()
 async def panel(ctx):
     async for msg in ctx.channel.history(limit=10):
