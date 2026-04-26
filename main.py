@@ -165,10 +165,25 @@ class TicketButtons(discord.ui.View):
 class PanelDropdown(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="BASIC PANEL"),
-            discord.SelectOption(label="UID BYPASS"),
-            discord.SelectOption(label="EMULATOR BYPASS"),
-            discord.SelectOption(label="CUSTOM PANEL"),
+           discord.SelectOption(label="BASIC PANEL", emoji="🔴"),
+            discord.SelectOption(label="UID BYPASS", emoji="🔴"),
+            discord.SelectOption(label="EMULATOR BYPASS", emoji="🔴"),
+            discord.SelectOption(label="CUSTOM PANEL", emoji="🔴"),
+            discord.SelectOption(label="AIMSILENT EXE", emoji="🔴"),
+            discord.SelectOption(label="AIMSILENT APK", emoji="🔴"),
+            discord.SelectOption(label="STREAMER PANEL", emoji="🔴"),
+            discord.SelectOption(label="INTERNAL MAX", emoji="🔴"),
+            discord.SelectOption(label="AIMKILL EXE", emoji="🔴"),
+            discord.SelectOption(label="OPTIMIZATION", emoji="🔴"),
+            discord.SelectOption(label="WINDOWS 10 PRO", emoji="🔴"),
+            discord.SelectOption(label="WINDOWS 11 PRO", emoji="🔴"),
+            discord.SelectOption(label="MS OFFICE 2021 PREMIUM", emoji="🔴"),
+            discord.SelectOption(label="MS 365 PREMIUM", emoji="🔴"),
+            discord.SelectOption(label="DEVICE ROOTING", emoji="🔴"),
+            discord.SelectOption(label="DRIP CLIENT", emoji="🔴"),
+            discord.SelectOption(label="BR MOD", emoji="🔴"),
+            discord.SelectOption(label="HG CHEATS", emoji="🔴"),
+            discord.SelectOption(label="KOS ROOT", emoji="🔴"),
         ]
         super().__init__(placeholder="Select Panel", options=options)
 
