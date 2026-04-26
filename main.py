@@ -157,14 +157,41 @@ class TicketButtons(discord.ui.View):
         remove_ticket(interaction.channel.id)
         await interaction.channel.delete()
 
-# ---------------- DROPDOWN (MERGED + FIXED) ----------------
+# ---------------- MAIN DROPDOWN ----------------
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
         options = [
             discord.SelectOption(label="Support"),
-            discord.SelectOption(label="Purchase"),
-            discord.SelectOption(label="SALE PANEL", emoji="🛒"),
+            discord.SelectOption(label="Purchase", emoji="🛒"),
+            discord.SelectOption(label="SALE PANEL", emoji="🔥"),
+        ]
+        super().__init__(placeholder="Select Ticket Type", options=options)
 
+    async def callback(self, interaction: discord.Interaction):
+
+        choice = self.values[0]
+
+        if choice == "Support":
+            await create_ticket(interaction, "Support")
+
+        elif choice == "Purchase":
+            await interaction.response.send_message(
+                "🛒 Select Purchase Panel Below:",
+                view=PurchasePanelView(),
+                ephemeral=True
+            )
+
+        elif choice == "SALE PANEL":
+            await interaction.response.send_message(
+                "🔥 SALE PANEL OPENED",
+                view=SalePanelView(),
+                ephemeral=True
+            )
+
+# ---------------- PURCHASE PANEL DROPDOWN ----------------
+class PurchasePanelSelect(discord.ui.Select):
+    def __init__(self):
+        options = [
             discord.SelectOption(label="BASIC PANEL", emoji="🔴"),
             discord.SelectOption(label="UID BYPASS", emoji="🔴"),
             discord.SelectOption(label="EMULATOR BYPASS", emoji="🔴"),
@@ -185,45 +212,15 @@ class TicketDropdown(discord.ui.Select):
             discord.SelectOption(label="HG CHEATS", emoji="🔴"),
             discord.SelectOption(label="KOS ROOT", emoji="🔴"),
         ]
-
-        super().__init__(placeholder="Select Ticket Type", options=options)
+        super().__init__(placeholder="Select Purchase Panel", options=options)
 
     async def callback(self, interaction: discord.Interaction):
+        await create_ticket(interaction, self.values[0])
 
-        val = self.values[0]
-
-        if val == "Support":
-            await create_ticket(interaction, "Support")
-
-        elif val == "Purchase":
-            await interaction.response.send_message(
-                "🛒 Select Panel Below:",
-                view=PanelView(),
-                ephemeral=True
-            )
-
-        elif val == "SALE PANEL":
-            await interaction.response.send_message(
-                "🔥 SALE PANEL OPENED",
-                view=SalePanelView(),
-                ephemeral=True
-            )
-
-        else:
-            await create_ticket(interaction, val)
-
-# ---------------- PANEL VIEW ----------------
-class PanelView(discord.ui.View):
+class PurchasePanelView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-
-    @discord.ui.button(label="BASIC PANEL", style=discord.ButtonStyle.primary)
-    async def basic(self, interaction, button):
-        await create_ticket(interaction, "BASIC PANEL")
-
-    @discord.ui.button(label="CUSTOM PANEL", style=discord.ButtonStyle.primary)
-    async def custom(self, interaction, button):
-        await create_ticket(interaction, "CUSTOM PANEL")
+        self.add_item(PurchasePanelSelect())
 
 # ---------------- SALE PANEL ----------------
 class SalePanelView(discord.ui.View):
@@ -244,19 +241,18 @@ class TicketView(discord.ui.View):
         super().__init__(timeout=None)
         self.add_item(TicketDropdown())
 
-# ---------------- UPDATED PANEL COMMAND ----------------
+# ---------------- PANEL COMMAND ----------------
 @bot.command()
 async def panel(ctx):
     embed = discord.Embed(
         title="INTELLECT-X – Official Tickets System",
         description="""
-Welcome to the official ticket system of INTELLECT-X.
+Welcome to the official ticket system.
 
 ━━━━━━━━━━━━━━━━━━━━━━
 🧡 Rules:
-* Only support & purchase tickets
-* No spam
-* Respect staff
+• No spam
+• Respect staff
 ━━━━━━━━━━━━━━━━━━━━━━
 """,
         color=discord.Color.dark_red()
