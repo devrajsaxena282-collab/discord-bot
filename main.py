@@ -220,6 +220,8 @@ class SupportPanelSelect(discord.ui.Select):
             discord.SelectOption(label="PRODUCT HELP", emoji="📦"),
             discord.SelectOption(label="PANEL SUPPORT", emoji="⭕"),
             discord.SelectOption(label="SOFTWARE HELP", emoji="💻"),
+
+discord.SelectOption(label="PAYMENT REGARDING", emoji="💸"),
         ]
         super().__init__(placeholder="Select Support Type", options=options)
 
