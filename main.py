@@ -137,8 +137,8 @@ async def create_ticket(interaction, selected_type):
 📌 **Ticket Type:** {selected_type}
 
 ━━━━━━━━━━━━━━━━━━━━━━
-👨‍💻 Staff will be with you soon
-🧡 Please describe your issue clearly
+👨‍💻 Welcome! Staff will be soon as soon.
+🧡 Please describe your issue clearly.
 ━━━━━━━━━━━━━━━━━━━━━━
 """,
         color=discord.Color.red()
