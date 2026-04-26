@@ -122,15 +122,29 @@ async def create_ticket(interaction, selected_type):
     add_ticket(interaction.user.id, channel.id, ticket_count, selected_type)
     active_tickets[interaction.user.id] = {"channel_id": channel.id, "type": selected_type}
 
-    embed = discord.Embed(
-        title="INTELLECT-X TICKET",
-        description=f"Ticket Type: {selected_type}",
+    # ---------------- CHANNEL MESSAGE (UPDATED ONLY) ----------------
+    channel_embed = discord.Embed(
+        title="🎫 INTELLECT-X TICKET OPENED",
+        description=f"""
+👋 Welcome {interaction.user.mention}
+
+📌 **Ticket Type:** {selected_type}
+
+━━━━━━━━━━━━━━━━━━━━━━
+👨‍💻 Staff will be with you soon
+🧡 Please describe your issue clearly
+━━━━━━━━━━━━━━━━━━━━━━
+""",
         color=discord.Color.red()
     )
 
-    await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
+    await channel.send(
+        content=interaction.user.mention,
+        embed=channel_embed,
+        view=TicketButtons()
+    )
 
-    # ---------------- 🔥 LOG SYSTEM (FIXED ONLY) ----------------
+    # ---------------- LOG SYSTEM ----------------
     log_channel = discord.utils.get(interaction.guild.text_channels, name=LOG_CHANNEL)
 
     if log_channel:
@@ -165,7 +179,7 @@ class TicketButtons(discord.ui.View):
     @discord.ui.button(label="Claim", style=discord.ButtonStyle.primary)
     async def claim(self, interaction, button):
         role = discord.utils.get(interaction.guild.roles, name=STAFF_ROLE)
-        if not role or not role in interaction.user.roles:
+        if not role or role not in interaction.user.roles:
             return await interaction.response.send_message("❌ Staff only!", ephemeral=True)
 
         await interaction.response.send_message(f"👤 Claimed by {interaction.user.mention}")
