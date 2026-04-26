@@ -20,7 +20,7 @@ def run():
 def keep_alive():
     Thread(target=run).start()
 
-# ---------------- INTENTS FIX (IMPORTANT) ----------------
+# ---------------- INTENTS ----------------
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -54,14 +54,14 @@ def get_user_ticket(user_id):
     cursor.execute("SELECT * FROM tickets WHERE user_id=?", (user_id,))
     return cursor.fetchone()
 
-# ---------------- CONFIG (UNCHANGED) ----------------
+# ---------------- CONFIG ----------------
 STAFF_ROLE = "Staff"
 LOG_CHANNEL = "ticket-logs"
 CATEGORY = "ticket"
 
 ticket_count = 0
 
-# ---------------- PURGE COMMAND (UNCHANGED) ----------------
+# ---------------- PURGE ----------------
 @bot.command()
 @commands.has_permissions(manage_messages=True)
 async def purge(ctx, amount: int = 100):
@@ -77,7 +77,7 @@ async def purge(ctx, amount: int = 100):
     await asyncio.sleep(2)
     await msg.delete()
 
-# ---------------- AUTO CLOSE (UNCHANGED) ----------------
+# ---------------- AUTO CLOSE ----------------
 async def auto_close(channel):
     await asyncio.sleep(3600)
     try:
@@ -86,29 +86,33 @@ async def auto_close(channel):
     except:
         pass
 
-# ---------------- CREATE TICKET (ONLY FIX HERE) ----------------
+# ---------------- CREATE TICKET (FIXED) ----------------
 async def create_ticket(interaction, selected_type):
     global ticket_count
 
-    # FIX: interaction safe
-    if not interaction.response.is_done():
-        await interaction.response.defer(ephemeral=True)
+    # FIX interaction failed
+    try:
+        if not interaction.response.is_done():
+            await interaction.response.defer(ephemeral=True)
+    except:
+        pass
 
     existing = get_user_ticket(interaction.user.id)
     if existing:
         ch = interaction.guild.get_channel(existing[1])
         if ch:
-            return await interaction.followup.send(
-                "❌ You already have a ticket!", ephemeral=True
-            )
+            try:
+                return await interaction.followup.send(
+                    "❌ You already have a ticket!", ephemeral=True
+                )
+            except:
+                return await interaction.channel.send("❌ You already have a ticket!")
         else:
             remove_ticket(existing[1])
 
     category = discord.utils.get(interaction.guild.categories, name=CATEGORY)
     if not category:
-        return await interaction.followup.send(
-            "❌ Create 'ticket' category first", ephemeral=True
-        )
+        return
 
     ticket_count += 1
     num = str(ticket_count).zfill(3)
@@ -128,7 +132,7 @@ async def create_ticket(interaction, selected_type):
 
     add_ticket(interaction.user.id, channel.id, ticket_count, selected_type)
 
-    # ---------------- EMBED (UNCHANGED STYLE) ----------------
+    # ---------------- EMBED ----------------
     embed = discord.Embed(
         title="🎫 INTELLECT-X TICKET OPENED",
         description=f"""
@@ -139,8 +143,8 @@ async def create_ticket(interaction, selected_type):
 📌 **Ticket Type:** {selected_type}
 
 ━━━━━━━━━━━━━━━━━━━━━━
-🧑🏼‍💼 Welcome! Staff will be soon as soon.
-👉 Please describe your issue clearly.
+🧑‍💻 Staff will be soon
+👉 Please describe your issue clearly
 ━━━━━━━━━━━━━━━━━━━━━━
 """,
         color=discord.Color.red()
@@ -152,43 +156,40 @@ async def create_ticket(interaction, selected_type):
         view=TicketButtons()
     )
 
-    # ---------------- LOG (UNCHANGED) ----------------
     log = discord.utils.get(interaction.guild.text_channels, name=LOG_CHANNEL)
     if log:
-        log_embed = discord.Embed(
-            title="📥 NEW TICKET CREATED",
-            description=f"""
-🎫 **Ticket Number:** #{num}
-👤 **User:** {interaction.user.mention}
-📌 **Type:** {selected_type}
+        await log.send(f"📥 Ticket #{num} created by {interaction.user}")
 
-━━━━━━━━━━━━━━━━━━━━━━
-👋 Welcome! Staff will be soon as soon.
-━━━━━━━━━━━━━━━━━━━━━━
-""",
-            color=discord.Color.dark_red()
+    try:
+        await interaction.followup.send(
+            f"✅ Ticket created: {channel.mention}",
+            ephemeral=True
         )
-        await log.send(embed=log_embed)
-
-    await interaction.followup.send(
-        f"✅ Ticket created: {channel.mention}",
-        ephemeral=True
-    )
+    except:
+        await interaction.channel.send(f"✅ Ticket created: {channel.mention}")
 
     bot.loop.create_task(auto_close(channel))
 
-# ---------------- BUTTONS (UNCHANGED) ----------------
+# ---------------- BUTTONS (FIXED) ----------------
 class TicketButtons(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Claim", style=discord.ButtonStyle.primary)
     async def claim(self, interaction, button):
-        await interaction.response.send_message(f"👤 Claimed by {interaction.user.mention}")
+        try:
+            await interaction.response.defer()
+            await interaction.followup.send(f"👤 Claimed by {interaction.user.mention}")
+        except:
+            await interaction.channel.send(f"👤 Claimed by {interaction.user.mention}")
 
     @discord.ui.button(label="Verify Payment", style=discord.ButtonStyle.success)
     async def verify(self, interaction, button):
-        await interaction.response.send_message(f"💰 Verified by {interaction.user.mention}")
+        try:
+            await interaction.response.defer()
+            await interaction.followup.send(f"💰 Verified by {interaction.user.mention}")
+        except:
+            await interaction.channel.send(f"💰 Verified by {interaction.user.mention}")
 
     @discord.ui.button(label="Close", style=discord.ButtonStyle.danger)
     async def close(self, interaction, button):
@@ -209,7 +210,7 @@ class TicketButtons(discord.ui.View):
         remove_ticket(interaction.channel.id)
         await interaction.channel.delete()
 
-# ---------------- SUPPORT PANEL (UNCHANGED) ----------------
+# ---------------- SUPPORT PANEL ----------------
 class SupportPanelSelect(discord.ui.Select):
     def __init__(self):
         options = [
@@ -232,7 +233,7 @@ class SupportPanelView(discord.ui.View):
         super().__init__(timeout=None)
         self.add_item(SupportPanelSelect())
 
-# ---------------- PURCHASE PANEL (UNCHANGED) ----------------
+# ---------------- PURCHASE PANEL ----------------
 class PurchasePanelSelect(discord.ui.Select):
     def __init__(self):
         options = [
@@ -266,7 +267,7 @@ class PurchasePanelView(discord.ui.View):
         super().__init__(timeout=None)
         self.add_item(PurchasePanelSelect())
 
-# ---------------- SALE PANEL (UNCHANGED) ----------------
+# ---------------- SALE PANEL ----------------
 class SalePanelView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -279,7 +280,7 @@ class SalePanelView(discord.ui.View):
     async def buy(self, interaction, button):
         await create_ticket(interaction, "SALE PURCHASE")
 
-# ---------------- MAIN DROPDOWN (UNCHANGED) ----------------
+# ---------------- DROPDOWN ----------------
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
         options = [
@@ -306,28 +307,14 @@ class TicketView(discord.ui.View):
         super().__init__(timeout=None)
         self.add_item(TicketDropdown())
 
-# ---------------- PANEL COMMAND ----------------
-panel_message_id = None
-
+# ---------------- PANEL ----------------
 @bot.command()
 async def panel(ctx):
     embed = discord.Embed(
         title="INTELLECT-X – Official Tickets System",
-        description="""
-Welcome to the official ticket system of INTELLECT-X.
-
-━━━━━━━━━━━━━━━━━━━━━━
-🧡 Rules:
-* Only support & purchase tickets
-* No spam
-* Respect staff
-━━━━━━━━━━━━━━━━━━━━━━
-""",
+        description="Ticket System Active",
         color=discord.Color.dark_red()
     )
-
-    embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
-    embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
 
     await ctx.send(embed=embed, view=TicketView())
 
