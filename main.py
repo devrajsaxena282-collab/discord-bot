@@ -267,15 +267,17 @@ class TicketView(discord.ui.View):
         super().__init__(timeout=None)
         self.add_item(TicketDropdown())
 
-# ---------------- PANEL COMMAND ----------------
+# ---------------- PANEL COMMAND (FIXED ONLY THIS PART) ----------------
 panel_message_id = None
 
 @bot.command()
 async def panel(ctx):
+    global panel_message_id
+
     async for msg in ctx.channel.history(limit=10):
         if msg.author == bot.user and msg.embeds:
             await msg.delete()
-            
+
     embed = discord.Embed(
         title="INTELLECT-X – Official Tickets System",
         description="""
@@ -294,20 +296,18 @@ Welcome to the official ticket system of INTELLECT-X.
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
     embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
 
-    await ctx.send(embed=embed, view=TicketView())
+    view = TicketView()
 
-    # 🔥 IF MESSAGE ALREADY EXISTS → EDIT IT
-    if panel_message is not None:
+    if panel_message_id is not None:
         try:
-            msg = await ctx.channel.fetch_message(panel_message)
+            msg = await ctx.channel.fetch_message(panel_message_id)
             await msg.edit(embed=embed, view=view)
             return
         except:
-            panel_message = None
+            panel_message_id = None
 
-    # 🔥 ELSE SEND NEW ONCE ONLY
     msg = await ctx.send(embed=embed, view=view)
-    panel_message = msg.id
+    panel_message_id = msg.id
 
 # ---------------- READY ----------------
 @bot.event
