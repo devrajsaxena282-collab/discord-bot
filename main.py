@@ -70,10 +70,10 @@ async def purge(ctx, amount: int = 100):
 
     deleted = await ctx.channel.purge(limit=amount + 1)
     msg = await ctx.send(f"🧹 Deleted {len(deleted)-1} messages")
-    
+
     await asyncio.sleep(2)
     await msg.delete()
-    
+
 # ---------------- AUTO CLOSE ----------------
 async def auto_close(channel):
     await asyncio.sleep(3600)
@@ -130,6 +130,26 @@ async def create_ticket(interaction, selected_type):
 
     await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
 
+    # ---------------- 🔥 LOG SYSTEM ADDED (ONLY ADDITION) ----------------
+    log_channel = discord.utils.get(interaction.guild.text_channels, name=LOG_CHANNEL)
+
+    if log_channel:
+        log_embed = discord.Embed(
+            title="📥 NEW TICKET CREATED",
+            description=f"""
+🎫 **Ticket Number:** #{num}
+👤 **User:** {interaction.user.mention}
+📌 **Type:** {selected_type}
+
+━━━━━━━━━━━━━━━━━━━━━━
+👋 Welcome! Staff will be soon as soon.
+━━━━━━━━━━━━━━━━━━━━━━
+""",
+            color=discord.Color.dark_red()
+        )
+
+        await log_channel.send(embed=log_embed)
+
     await interaction.response.send_message(
         f"✅ Ticket created: {channel.mention}",
         ephemeral=True
@@ -145,7 +165,7 @@ class TicketButtons(discord.ui.View):
     @discord.ui.button(label="Claim", style=discord.ButtonStyle.primary)
     async def claim(self, interaction, button):
         role = discord.utils.get(interaction.guild.roles, name=STAFF_ROLE)
-        if not role or role not in interaction.user.roles:
+        if not role or not role in interaction.user.roles:
             return await interaction.response.send_message("❌ Staff only!", ephemeral=True)
 
         await interaction.response.send_message(f"👤 Claimed by {interaction.user.mention}")
@@ -187,7 +207,7 @@ class SupportPanelSelect(discord.ui.Select):
         ]
         super().__init__(placeholder="Select Support Type", options=options)
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction):
         await create_ticket(interaction, self.values[0])
 
 class SupportPanelView(discord.ui.View):
@@ -221,7 +241,7 @@ class PurchasePanelSelect(discord.ui.Select):
         ]
         super().__init__(placeholder="Select Purchase Panel", options=options)
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction):
         await create_ticket(interaction, self.values[0])
 
 class PurchasePanelView(discord.ui.View):
@@ -252,30 +272,17 @@ class TicketDropdown(discord.ui.Select):
         ]
         super().__init__(placeholder="Select Ticket Type", options=options)
 
-    async def callback(self, interaction: discord.Interaction):
-
+    async def callback(self, interaction):
         choice = self.values[0]
 
         if choice == "Support":
-            await interaction.response.send_message(
-                "🧡 Select Support Type:",
-                view=SupportPanelView(),
-                ephemeral=True
-            )
+            await interaction.response.send_message("🧡 Select Support Type:", view=SupportPanelView(), ephemeral=True)
 
         elif choice == "Purchase":
-            await interaction.response.send_message(
-                "🛒 Select Purchase Panel:",
-                view=PurchasePanelView(),
-                ephemeral=True
-            )
+            await interaction.response.send_message("🛒 Select Purchase Panel:", view=PurchasePanelView(), ephemeral=True)
 
         elif choice == "SALE PANEL":
-            await interaction.response.send_message(
-                "🔥 SALE PANEL OPENED",
-                view=SalePanelView(),
-                ephemeral=True
-            )
+            await interaction.response.send_message("🔥 SALE PANEL OPENED", view=SalePanelView(), ephemeral=True)
 
 # ---------------- MAIN VIEW ----------------
 class TicketView(discord.ui.View):
@@ -288,10 +295,8 @@ panel_message_id = None
 
 @bot.command()
 async def panel(ctx):
-    async for msg in ctx.channel.history(limit=10):
-        if msg.author == bot.user and msg.embeds:
-            await msg.delete()
-            
+    global panel_message_id
+
     embed = discord.Embed(
         title="INTELLECT-X – Official Tickets System",
         description="""
@@ -310,20 +315,18 @@ Welcome to the official ticket system of INTELLECT-X.
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
     embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
 
-    await ctx.send(embed=embed, view=TicketView())
+    view = TicketView()
 
-    # 🔥 IF MESSAGE ALREADY EXISTS → EDIT IT
-    if panel_message is not None:
+    if panel_message_id:
         try:
-            msg = await ctx.channel.fetch_message(panel_message)
+            msg = await ctx.channel.fetch_message(panel_message_id)
             await msg.edit(embed=embed, view=view)
             return
         except:
-            panel_message = None
+            panel_message_id = None
 
-    # 🔥 ELSE SEND NEW ONCE ONLY
     msg = await ctx.send(embed=embed, view=view)
-    panel_message = msg.id
+    panel_message_id = msg.id
 
 # ---------------- READY ----------------
 @bot.event
