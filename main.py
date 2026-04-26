@@ -14,12 +14,6 @@ app = Flask(__name__)
 def home():
     return "Bot Running"
 
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    data = request.json
-    print("Webhook:", data)
-    return "ok"
-
 def run():
     app.run(host="0.0.0.0", port=8080)
 
@@ -94,6 +88,52 @@ async def auto_close(channel):
     except:
         pass
 
+# ---------------- CREATE TICKET FUNCTION ----------------
+async def create_ticket(interaction, selected_type):
+    global ticket_count
+
+    if get_user_ticket(interaction.user.id):
+        return await interaction.response.send_message(
+            "❌ You already have a ticket!", ephemeral=True
+        )
+
+    category = discord.utils.get(interaction.guild.categories, name=CATEGORY)
+
+    ticket_count += 1
+    save_ticket_count(ticket_count)
+
+    num = str(ticket_count).zfill(3)
+
+    channel = await interaction.guild.create_text_channel(
+        f"ticket-{num}",
+        category=category,
+        topic=str(interaction.user.id)
+    )
+
+    await channel.set_permissions(interaction.guild.default_role, view_channel=False)
+    await channel.set_permissions(interaction.user, view_channel=True)
+
+    role = discord.utils.get(interaction.guild.roles, name=STAFF_ROLE)
+    if role:
+        await channel.set_permissions(role, view_channel=True)
+
+    add_ticket(interaction.user.id, channel.id, ticket_count, selected_type)
+
+    embed = discord.Embed(
+        title="Support" if selected_type == "Support" else "Purchase",
+        description=f"Ticket #{num}\nType: {selected_type}",
+        color=discord.Color.red()
+    )
+
+    await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
+
+    await interaction.response.send_message(
+        f"✅ Ticket created for {interaction.user.mention}",
+        ephemeral=True
+    )
+
+    bot.loop.create_task(auto_close(channel))
+
 # ---------------- BUTTONS ----------------
 class TicketButtons(discord.ui.View):
     def __init__(self):
@@ -116,7 +156,6 @@ class TicketButtons(discord.ui.View):
                 user_name = user.name
             ticket_type = data[3]
 
-        # transcript
         msgs = []
         async for m in interaction.channel.history(limit=200):
             msgs.append(f"{m.author}: {m.content}")
@@ -132,70 +171,66 @@ class TicketButtons(discord.ui.View):
         remove_ticket(interaction.channel.id)
         await interaction.channel.delete()
 
-# ---------------- DROPDOWN ----------------
+# ---------------- PANEL DROPDOWN ----------------
+class PanelDropdown(discord.ui.Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label="BASIC PANEL"),
+            discord.SelectOption(label="UID BYPASS"),
+            discord.SelectOption(label="EMULATOR BYPASS"),
+            discord.SelectOption(label="CUSTOM PANEL"),
+            discord.SelectOption(label="AIMSILENT EXE"),
+            discord.SelectOption(label="AIMSILENT APK"),
+            discord.SelectOption(label="STREAMER PANEL"),
+            discord.SelectOption(label="INTERNAL MAX"),
+            discord.SelectOption(label="AIMKILL EXE"),
+            discord.SelectOption(label="OPTIMIZATION"),
+            discord.SelectOption(label="WINDOWS 10 PRO"),
+            discord.SelectOption(label="WINDOWS 11 PRO"),
+            discord.SelectOption(label="MS OFFICE 2021 PREMIUM"),
+            discord.SelectOption(label="MS 365 PREMIUM"),
+            discord.SelectOption(label="DEVICE ROOTING"),
+            discord.SelectOption(label="DRIP CLIENT"),
+            discord.SelectOption(label="BR MOD"),
+            discord.SelectOption(label="HG CHEATS"),
+            discord.SelectOption(label="KOS ROOT"),
+        ]
+        super().__init__(placeholder="Select Panel", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        await create_ticket(interaction, self.values[0])
+
+class PanelView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(PanelDropdown())
+
+# ---------------- MAIN DROPDOWN ----------------
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
         options = [
             discord.SelectOption(label="Support"),
-            discord.SelectOption(label="Purchase")
+            discord.SelectOption(label="Purchase"),
         ]
-        super().__init__(placeholder="Select Ticket Type", options=options)
+        super().__init__(placeholder="Select Option", options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        global ticket_count
+        if self.values[0] == "Support":
+            await create_ticket(interaction, "Support")
 
-        if get_user_ticket(interaction.user.id):
-            return await interaction.response.send_message(
-                "❌ You already have a ticket!", ephemeral=True
+        elif self.values[0] == "Purchase":
+            await interaction.response.send_message(
+                "🛒 Select Panel below:",
+                view=PanelView(),
+                ephemeral=True
             )
-
-        category = discord.utils.get(interaction.guild.categories, name=CATEGORY)
-        if not category:
-            return await interaction.response.send_message(
-                "❌ Create 'ticket' category", ephemeral=True
-            )
-
-        ticket_count += 1
-        save_ticket_count(ticket_count)
-
-        num = str(ticket_count).zfill(3)
-
-        channel = await interaction.guild.create_text_channel(
-            f"ticket-{num}",
-            category=category,
-            topic=str(interaction.user.id)
-        )
-
-        await channel.set_permissions(interaction.guild.default_role, view_channel=False)
-        await channel.set_permissions(interaction.user, view_channel=True)
-
-        role = discord.utils.get(interaction.guild.roles, name=STAFF_ROLE)
-        if role:
-            await channel.set_permissions(role, view_channel=True)
-
-        add_ticket(interaction.user.id, channel.id, ticket_count, self.values[0])
-
-        embed = discord.Embed(
-            title="Support",
-            description=f"Ticket #{num}\nType: {self.values[0]}",
-            color=discord.Color.red()
-        )
-
-        await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
-
-        await interaction.response.send_message(
-            f"✅ Ticket created for {interaction.user.mention}",
-            ephemeral=True
-        )
-
-        bot.loop.create_task(auto_close(channel))
 
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(TicketDropdown())
 
-# ---------------- PANEL ----------------
+# ---------------- PANEL COMMAND ----------------
 @bot.command()
 async def panel(ctx):
     embed = discord.Embed(
@@ -205,7 +240,6 @@ async def panel(ctx):
     )
     await ctx.send(embed=embed, view=TicketView())
 
-# ---------------- READY ----------------
 @bot.event
 async def on_ready():
     bot.add_view(TicketView())
