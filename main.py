@@ -294,7 +294,20 @@ Welcome to the official ticket system of INTELLECT-X.
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
     embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
 
-    await ctx.send(embed=embed, view=TicketView())
+    view = TicketView()
+
+    # 🔥 IF MESSAGE ALREADY EXISTS → EDIT IT
+    if panel_message is not None:
+        try:
+            msg = await ctx.channel.fetch_message(panel_message)
+            await msg.edit(embed=embed, view=view)
+            return
+        except:
+            panel_message = None
+
+    # 🔥 ELSE SEND NEW ONCE ONLY
+    msg = await ctx.send(embed=embed, view=view)
+    panel_message = msg.id
 
 # ---------------- READY ----------------
 @bot.event
