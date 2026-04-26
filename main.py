@@ -175,10 +175,10 @@ class TicketButtons(discord.ui.View):
         await interaction.channel.delete()
 
 # ---------------- PANEL DROPDOWN ----------------
-class PanelDropdown(discord.ui.Select):
-    def __init__(self):
+class TicketDropdown(discord.ui.Select):
+    def _init_(self):
         options = [
-           discord.SelectOption(label="BASIC PANEL", emoji="🔴"),
+            discord.SelectOption(label="BASIC PANEL", emoji="🔴"),
             discord.SelectOption(label="UID BYPASS", emoji="🔴"),
             discord.SelectOption(label="EMULATOR BYPASS", emoji="🔴"),
             discord.SelectOption(label="CUSTOM PANEL", emoji="🔴"),
@@ -198,15 +198,68 @@ class PanelDropdown(discord.ui.Select):
             discord.SelectOption(label="HG CHEATS", emoji="🔴"),
             discord.SelectOption(label="KOS ROOT", emoji="🔴"),
         ]
-        super().__init__(placeholder="Select Panel", options=options)
+        super()._init_(placeholder="Select Ticket Type", options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        await create_ticket(interaction, self.values[0])
+        global ticket_count
+        await interaction.response.defer(ephemeral=True)
+        guild = interaction.guild
+        user_id = interaction.user.id
+        selected_type = self.values[0]
 
-class PanelView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.add_item(PanelDropdown())
+        # ✅ CHECK 1 (memory)
+        if user_id in active_tickets:
+            return await interaction.followup.send(
+                "❌ You already have an open ticket!",
+                ephemeral=True
+            )
+
+        # ✅ CHECK 2 (restart safe)
+        for ch in guild.text_channels:
+            if ch.name.startswith("ticket-") and ch.topic == str(user_id):
+                return await interaction.followup.send(
+                    "❌ You already have an open ticket!",
+                    ephemeral=True
+                )
+
+        category = discord.utils.get(guild.categories, name="ticket")
+        if not category:
+            return await interaction.followup.send("❌ Create 'ticket' category first", ephemeral=True)
+
+        ticket_count += 1
+        ticket_number = str(ticket_count).zfill(3)
+
+        channel = await guild.create_text_channel(
+            name=f"ticket-{ticket_number}",
+            category=category,
+            topic=str(user_id)  # 🔥 IMPORTANT
+        )
+
+        await channel.set_permissions(guild.default_role, view_channel=False)
+        await channel.set_permissions(interaction.user, view_channel=True, send_messages=True)
+
+        staff_role = discord.utils.get(guild.roles, name=STAFF_ROLE)
+        if staff_role:
+            await channel.set_permissions(staff_role, view_channel=True, send_messages=True)
+
+        active_tickets[user_id] = {"channel_id": channel.id, "type": selected_type}
+
+        embed = discord.Embed(
+            title="INTELLECT-X Support",
+            description=f"Ticket ID: {ticket_number}\n*Type:* {selected_type}\nWelcome! Staff will assist you soon.",
+            color=discord.Color.dark_red()
+        )
+
+        await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
+        await interaction.followup.send(
+            f"✅ Ticket created: {channel.mention}",
+            ephemeral=True
+        )
+
+class TicketView(discord.ui.View):
+    def _init_(self):
+        super()._init_(timeout=None)
+        self.add_item(TicketDropdown())
 
 # ---------------- MAIN DROPDOWN ----------------
 class TicketDropdown(discord.ui.Select):
