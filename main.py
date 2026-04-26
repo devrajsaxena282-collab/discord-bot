@@ -107,8 +107,8 @@ async def create_ticket(interaction, selected_type):
     active_tickets[interaction.user.id] = {"channel_id": channel.id, "type": selected_type}
 
     embed = discord.Embed(
-        title="INTELLECT-X Ticket",
-        description=f"Ticket #{num}\nType: {selected_type}",
+        title="INTELLECT-X TICKET",
+        description=f"Ticket Type: {selected_type}",
         color=discord.Color.red()
     )
 
@@ -136,7 +136,7 @@ class TicketButtons(discord.ui.View):
 
     @discord.ui.button(label="Verify Payment", style=discord.ButtonStyle.success)
     async def verify(self, interaction, button):
-        await interaction.response.send_message(f"💰 Payment verified by {interaction.user.mention}")
+        await interaction.response.send_message(f"💰 Verified by {interaction.user.mention}")
 
     @discord.ui.button(label="Close", style=discord.ButtonStyle.danger)
     async def close(self, interaction, button):
@@ -157,38 +157,29 @@ class TicketButtons(discord.ui.View):
         remove_ticket(interaction.channel.id)
         await interaction.channel.delete()
 
-# ---------------- MAIN DROPDOWN ----------------
-class TicketDropdown(discord.ui.Select):
+# ---------------- SUPPORT PANEL ----------------
+class SupportPanelSelect(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="Support"),
-            discord.SelectOption(label="Purchase", emoji="🛒"),
-            discord.SelectOption(label="SALE PANEL", emoji="🔥"),
+            discord.SelectOption(label="GENERAL SUPPORT", emoji="🧡"),
+            discord.SelectOption(label="TECH ISSUE", emoji="🛠️"),
+            discord.SelectOption(label="BILLING HELP", emoji="💳"),
+            discord.SelectOption(label="ACCOUNT ISSUE", emoji="🔐"),
+            discord.SelectOption(label="PRODUCT HELP", emoji="📦"),
+            discord.SelectOption(label="PANEL SUPPORT", emoji="🔴"),
+            discord.SelectOption(label="SOFTWARE HELP", emoji="💻"),
         ]
-        super().__init__(placeholder="Select Ticket Type", options=options)
+        super().__init__(placeholder="Select Support Type", options=options)
 
     async def callback(self, interaction: discord.Interaction):
+        await create_ticket(interaction, self.values[0])
 
-        choice = self.values[0]
+class SupportPanelView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(SupportPanelSelect())
 
-        if choice == "Support":
-            await create_ticket(interaction, "Support")
-
-        elif choice == "Purchase":
-            await interaction.response.send_message(
-                "🛒 Select Purchase Panel Below:",
-                view=PurchasePanelView(),
-                ephemeral=True
-            )
-
-        elif choice == "SALE PANEL":
-            await interaction.response.send_message(
-                "🔥 SALE PANEL OPENED",
-                view=SalePanelView(),
-                ephemeral=True
-            )
-
-# ---------------- PURCHASE PANEL DROPDOWN ----------------
+# ---------------- PURCHASE PANEL ----------------
 class PurchasePanelSelect(discord.ui.Select):
     def __init__(self):
         options = [
@@ -235,6 +226,41 @@ class SalePanelView(discord.ui.View):
     async def buy(self, interaction, button):
         await create_ticket(interaction, "SALE PURCHASE")
 
+# ---------------- MAIN DROPDOWN ----------------
+class TicketDropdown(discord.ui.Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label="Support", emoji="🧡"),
+            discord.SelectOption(label="Purchase", emoji="🛒"),
+            discord.SelectOption(label="SALE PANEL", emoji="🔥"),
+        ]
+        super().__init__(placeholder="Select Ticket Type", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+
+        choice = self.values[0]
+
+        if choice == "Support":
+            await interaction.response.send_message(
+                "🧡 Select Support Type:",
+                view=SupportPanelView(),
+                ephemeral=True
+            )
+
+        elif choice == "Purchase":
+            await interaction.response.send_message(
+                "🛒 Select Purchase Panel:",
+                view=PurchasePanelView(),
+                ephemeral=True
+            )
+
+        elif choice == "SALE PANEL":
+            await interaction.response.send_message(
+                "🔥 SALE PANEL OPENED",
+                view=SalePanelView(),
+                ephemeral=True
+            )
+
 # ---------------- MAIN VIEW ----------------
 class TicketView(discord.ui.View):
     def __init__(self):
@@ -245,24 +271,16 @@ class TicketView(discord.ui.View):
 @bot.command()
 async def panel(ctx):
     embed = discord.Embed(
-        title="INTELLECT-X – Official Tickets System",
-        description="""
-Welcome to the official ticket system.
-
-━━━━━━━━━━━━━━━━━━━━━━
-🧡 Rules:
-• No spam
-• Respect staff
-━━━━━━━━━━━━━━━━━━━━━━
-""",
+        title="INTELLECT-X TICKET SYSTEM",
+        description="Support / Purchase / Sale System",
         color=discord.Color.dark_red()
     )
 
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
-    embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
 
     await ctx.send(embed=embed, view=TicketView())
 
+# ---------------- READY ----------------
 @bot.event
 async def on_ready():
     bot.add_view(TicketView())
