@@ -30,7 +30,6 @@ intents.guilds = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# active_tickets format: {user_id: {"channel_id": id, "type": "panel_name"}}
 active_tickets = {} 
 ticket_count = 0
 
@@ -72,26 +71,33 @@ class TicketButtons(discord.ui.View):
         guild = interaction.guild
         log_channel = discord.utils.get(guild.text_channels, name=LOG_CHANNEL)
 
-        # Ticket Type nikaalna aur active_tickets se delete karna
         ticket_type = "Unknown"
-        for user_id, data in list(active_tickets.items()):
+        user_to_remove = None
+
+        # FIX: Safe removal
+        for user_id, data in active_tickets.items():
             if data["channel_id"] == interaction.channel.id:
                 ticket_type = data["type"]
-                del active_tickets[user_id]
+                user_to_remove = user_id
                 break
+
+        if user_to_remove:
+            del active_tickets[user_to_remove]
 
         # Transcript
         transcript = []
         async for msg in interaction.channel.history(limit=200):
             transcript.append(f"{msg.author}: {msg.content}")
-        
-        # Log mein type add karna
+
         log_text = f"Ticket Type: {ticket_type}\n\n" + "\n".join(transcript[::-1])
 
         if log_channel:
             file = discord.File(BytesIO(log_text.encode()), filename="transcript.txt")
-            await log_channel.send(f"📜 Transcript for: {interaction.channel.name} (Type: {ticket_type})", file=file)
-        
+            await log_channel.send(
+                f"📜 Transcript for: {interaction.channel.name} (Type: {ticket_type})",
+                file=file
+            )
+
         await interaction.channel.delete()
 
 # ---------------- DROPDOWN ----------------
@@ -128,8 +134,16 @@ class TicketDropdown(discord.ui.Select):
         user_id = interaction.user.id
         selected_type = self.values[0]
 
-        if user_id in active_tickets:
-            return await interaction.followup.send("❌ You already have a ticket!", ephemeral=True)
+        # 🔥 FIX: Channel-based check (instead of only dict)
+        existing_channel = discord.utils.get(guild.text_channels, name=f"ticket-")
+        for ch in guild.text_channels:
+            if ch.name.startswith("ticket-"):
+                perms = ch.permissions_for(interaction.user)
+                if perms.read_messages:
+                    return await interaction.followup.send(
+                        "❌ You already have an open ticket!",
+                        ephemeral=True
+                    )
 
         category = discord.utils.get(guild.categories, name="ticket")
         if not category:
@@ -150,7 +164,6 @@ class TicketDropdown(discord.ui.Select):
         if staff_role:
             await channel.set_permissions(staff_role, view_channel=True, send_messages=True)
 
-        # Ab ticket ka type save ho raha hai
         active_tickets[user_id] = {"channel_id": channel.id, "type": selected_type}
 
         embed = discord.Embed(
@@ -160,7 +173,10 @@ class TicketDropdown(discord.ui.Select):
         )
 
         await channel.send(content=interaction.user.mention, embed=embed, view=TicketButtons())
-        await interaction.followup.send(f"✅ Ticket created for {selected_type}: {channel.mention}", ephemeral=True)
+        await interaction.followup.send(
+            f"✅ Ticket created for {selected_type}: {channel.mention}",
+            ephemeral=True
+        )
 
 class TicketView(discord.ui.View):
     def __init__(self):
@@ -184,19 +200,14 @@ Welcome to the official ticket system of INTELLECT-X.
         color=discord.Color.dark_red()
     )
 
-    # **1. Right Side Logo (Thumbnail)**
-    # Apne logo ka seedha link yahan dalein
     embed.set_thumbnail(url="https://i.postimg.cc/L6Z52HmG/1000204859.png")
-
-    # **2. GIF/Image above Dropdown (Set Image)**
-    # Apne GIF/Image ka seedha link yahan dalein
-    # Yeh dropdown ke upar (Embed ke bottom mein) show hoga
     embed.set_image(url="https://www.image2url.com/r2/default/gifs/1776315441121-f3fbcbaa-81cb-43b6-8b30-119cca261799.gif")
 
     await ctx.send(embed=embed, view=TicketView())
 
 keep_alive()
 TOKEN = os.getenv("DISCORD_TOKEN")
+
 if TOKEN:
     bot.run(TOKEN)
 else:
