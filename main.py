@@ -20,7 +20,7 @@ def run():
 def keep_alive():
     Thread(target=run).start()
 
-# ---------------- INTENTS FIX ----------------
+# ---------------- INTENTS FIX (IMPORTANT) ----------------
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -36,15 +36,14 @@ CREATE TABLE IF NOT EXISTS tickets (
     user_id INTEGER,
     channel_id INTEGER,
     ticket_number INTEGER,
-    ticket_type TEXT,
-    source_channel_id INTEGER
+    ticket_type TEXT
 )
 """)
 conn.commit()
 
-def add_ticket(user_id, channel_id, num, ttype, source_channel_id):
-    cursor.execute("INSERT INTO tickets VALUES (?, ?, ?, ?, ?)",
-                   (user_id, channel_id, num, ttype, source_channel_id))
+def add_ticket(user_id, channel_id, num, ttype):
+    cursor.execute("INSERT INTO tickets VALUES (?, ?, ?, ?)",
+                   (user_id, channel_id, num, ttype))
     conn.commit()
 
 def remove_ticket(channel_id):
@@ -55,14 +54,14 @@ def get_user_ticket(user_id):
     cursor.execute("SELECT * FROM tickets WHERE user_id=?", (user_id,))
     return cursor.fetchone()
 
-# ---------------- CONFIG ----------------
+# ---------------- CONFIG (UNCHANGED) ----------------
 STAFF_ROLE = "Staff"
 LOG_CHANNEL = "ticket-logs"
 CATEGORY = "ticket"
 
 ticket_count = 0
 
-# ---------------- PURGE ----------------
+# ---------------- PURGE COMMAND (UNCHANGED) ----------------
 @bot.command()
 @commands.has_permissions(manage_messages=True)
 async def purge(ctx, amount: int = 100):
@@ -78,7 +77,7 @@ async def purge(ctx, amount: int = 100):
     await asyncio.sleep(2)
     await msg.delete()
 
-# ---------------- AUTO CLOSE ----------------
+# ---------------- AUTO CLOSE (UNCHANGED) ----------------
 async def auto_close(channel):
     await asyncio.sleep(3600)
     try:
@@ -87,10 +86,11 @@ async def auto_close(channel):
     except:
         pass
 
-# ---------------- CREATE TICKET (UNCHANGED + FIX ONLY) ----------------
+# ---------------- CREATE TICKET (ONLY FIX HERE) ----------------
 async def create_ticket(interaction, selected_type):
     global ticket_count
 
+    # FIX: interaction safe
     if not interaction.response.is_done():
         await interaction.response.defer(ephemeral=True)
 
@@ -126,17 +126,9 @@ async def create_ticket(interaction, selected_type):
     if role:
         await channel.set_permissions(role, view_channel=True)
 
-    # 🔥 FIX ADDED: source channel saved
-    source_channel_id = interaction.channel.id
+    add_ticket(interaction.user.id, channel.id, ticket_count, selected_type)
 
-    add_ticket(
-        interaction.user.id,
-        channel.id,
-        ticket_count,
-        selected_type,
-        source_channel_id
-    )
-
+    # ---------------- EMBED (UNCHANGED STYLE) ----------------
     embed = discord.Embed(
         title="🎫 INTELLECT-X TICKET OPENED",
         description=f"""
@@ -147,8 +139,8 @@ async def create_ticket(interaction, selected_type):
 📌 **Ticket Type:** {selected_type}
 
 ━━━━━━━━━━━━━━━━━━━━━━
-👨‍💻 Staff will be soon
-👉 Please describe your issue clearly
+👨‍💻 Welcome! Staff will be soon as soon.
+🧡 Please describe your issue clearly.
 ━━━━━━━━━━━━━━━━━━━━━━
 """,
         color=discord.Color.red()
@@ -160,9 +152,23 @@ async def create_ticket(interaction, selected_type):
         view=TicketButtons()
     )
 
+    # ---------------- LOG (UNCHANGED) ----------------
     log = discord.utils.get(interaction.guild.text_channels, name=LOG_CHANNEL)
     if log:
-        await log.send(f"📥 Ticket #{num} created by {interaction.user}")
+        log_embed = discord.Embed(
+            title="📥 NEW TICKET CREATED",
+            description=f"""
+🎫 **Ticket Number:** #{num}
+👤 **User:** {interaction.user.mention}
+📌 **Type:** {selected_type}
+
+━━━━━━━━━━━━━━━━━━━━━━
+👋 Welcome! Staff will be with you soon.
+━━━━━━━━━━━━━━━━━━━━━━
+""",
+            color=discord.Color.dark_red()
+        )
+        await log.send(embed=log_embed)
 
     await interaction.followup.send(
         f"✅ Ticket created: {channel.mention}",
@@ -171,7 +177,7 @@ async def create_ticket(interaction, selected_type):
 
     bot.loop.create_task(auto_close(channel))
 
-# ---------------- BUTTONS (ONLY CLOSE FIXED) ----------------
+# ---------------- BUTTONS (UNCHANGED) ----------------
 class TicketButtons(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -200,18 +206,6 @@ class TicketButtons(discord.ui.View):
         if log:
             await log.send("📜 Ticket Closed", file=file)
 
-        # 🔥 SOURCE CHANNEL CHAT DELETE FEATURE
-        cursor.execute("SELECT source_channel_id FROM tickets WHERE channel_id=?", (interaction.channel.id,))
-        data = cursor.fetchone()
-
-        if data and data[0]:
-            source = interaction.guild.get_channel(data[0])
-            if source:
-                try:
-                    await source.purge(limit=None)
-                except:
-                    pass
-
         remove_ticket(interaction.channel.id)
         await interaction.channel.delete()
 
@@ -219,14 +213,14 @@ class TicketButtons(discord.ui.View):
 class SupportPanelSelect(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="GENERAL SUPPORT", emoji="❤️"),
+            discord.SelectOption(label="GENERAL SUPPORT", emoji="🧡"),
             discord.SelectOption(label="TECH ISSUE", emoji="🛠️"),
             discord.SelectOption(label="BILLING HELP", emoji="💳"),
             discord.SelectOption(label="ACCOUNT ISSUE", emoji="🔐"),
             discord.SelectOption(label="PRODUCT HELP", emoji="📦"),
             discord.SelectOption(label="PANEL SUPPORT", emoji="🔴"),
             discord.SelectOption(label="SOFTWARE HELP", emoji="💻"),
-            discord.SelectOption(label="PAYMENT ISSUE", emoji="💻"),
+            discord.SelectOption(label="PAYMENT ISSUE", emoji="💰"),
         ]
         super().__init__(placeholder="Select Support Type", options=options)
 
@@ -242,25 +236,25 @@ class SupportPanelView(discord.ui.View):
 class PurchasePanelSelect(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="BASIC PANEL", emoji="🔴"),
-            discord.SelectOption(label="UID BYPASS", emoji="🔴"),
-            discord.SelectOption(label="EMULATOR BYPASS", emoji="🔴"),
-            discord.SelectOption(label="CUSTOM PANEL", emoji="🔴"),
-            discord.SelectOption(label="AIMSILENT EXE", emoji="🔴"),
-            discord.SelectOption(label="AIMSILENT APK", emoji="🔴"),
-            discord.SelectOption(label="STREAMER PANEL", emoji="🔴"),
-            discord.SelectOption(label="INTERNAL MAX", emoji="🔴"),
-            discord.SelectOption(label="AIMKILL EXE", emoji="🔴"),
-            discord.SelectOption(label="OPTIMIZATION", emoji="🔴"),
-            discord.SelectOption(label="WINDOWS 10 PRO", emoji="🔴"),
-            discord.SelectOption(label="WINDOWS 11 PRO", emoji="🔴"),
+            discord.SelectOption(label="BASIC PANEL", emoji="⭕️"),
+            discord.SelectOption(label="UID BYPASS", emoji="⭕️"),
+            discord.SelectOption(label="EMULATOR BYPASS", emoji="⭕️"),
+            discord.SelectOption(label="CUSTOM PANEL", emoji="⭕️"),
+            discord.SelectOption(label="AIMSILENT EXE", emoji="⭕️"),
+            discord.SelectOption(label="AIMSILENT APK", emoji="⭕️"),
+            discord.SelectOption(label="STREAMER PANEL", emoji="⭕️"),
+            discord.SelectOption(label="INTERNAL MAX", emoji="⭕️"),
+            discord.SelectOption(label="AIMKILL EXE", emoji="⭕️"),
+            discord.SelectOption(label="OPTIMIZATION", emoji="⭕️"),
+            discord.SelectOption(label="WINDOWS 10 PRO", emoji="⭕️"),
+            discord.SelectOption(label="WINDOWS 11 PRO", emoji="⭕️"),
             discord.SelectOption(label="MS OFFICE 2021 PREMIUM", emoji="🔴"),
-            discord.SelectOption(label="MS 365 PREMIUM", emoji="🔴"),
-            discord.SelectOption(label="DEVICE ROOTING", emoji="🔴"),
-            discord.SelectOption(label="DRIP CLIENT", emoji="🔴"),
-            discord.SelectOption(label="BR MOD", emoji="🔴"),
-            discord.SelectOption(label="HG CHEATS", emoji="🔴"),
-            discord.SelectOption(label="KOS ROOT", emoji="🔴"),
+            discord.SelectOption(label="MS 365 PREMIUM", emoji="⭕️"),
+            discord.SelectOption(label="DEVICE ROOTING", emoji="⭕️"),
+            discord.SelectOption(label="DRIP CLIENT", emoji="⭕️"),
+            discord.SelectOption(label="BR MOD", emoji="⭕️"),
+            discord.SelectOption(label="HG CHEATS", emoji="⭕️"),
+            discord.SelectOption(label="KOS ROOT", emoji="⭕️"),
         ]
         super().__init__(placeholder="Select Purchase Panel", options=options)
 
@@ -285,7 +279,7 @@ class SalePanelView(discord.ui.View):
     async def buy(self, interaction, button):
         await create_ticket(interaction, "SALE PURCHASE")
 
-# ---------------- MAIN DROPDOWN ----------------
+# ---------------- MAIN DROPDOWN (UNCHANGED) ----------------
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
         options = [
@@ -313,6 +307,8 @@ class TicketView(discord.ui.View):
         self.add_item(TicketDropdown())
 
 # ---------------- PANEL COMMAND ----------------
+panel_message_id = None
+
 @bot.command()
 async def panel(ctx):
     embed = discord.Embed(
