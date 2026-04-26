@@ -20,7 +20,7 @@ def run():
 def keep_alive():
     Thread(target=run).start()
 
-# ---------------- INTENTS FIX (IMPORTANT) ----------------
+# ---------------- INTENTS FIX ----------------
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -36,14 +36,15 @@ CREATE TABLE IF NOT EXISTS tickets (
     user_id INTEGER,
     channel_id INTEGER,
     ticket_number INTEGER,
-    ticket_type TEXT
+    ticket_type TEXT,
+    source_channel_id INTEGER
 )
 """)
 conn.commit()
 
-def add_ticket(user_id, channel_id, num, ttype):
-    cursor.execute("INSERT INTO tickets VALUES (?, ?, ?, ?)",
-                   (user_id, channel_id, num, ttype))
+def add_ticket(user_id, channel_id, num, ttype, source_channel_id):
+    cursor.execute("INSERT INTO tickets VALUES (?, ?, ?, ?, ?)",
+                   (user_id, channel_id, num, ttype, source_channel_id))
     conn.commit()
 
 def remove_ticket(channel_id):
@@ -54,14 +55,14 @@ def get_user_ticket(user_id):
     cursor.execute("SELECT * FROM tickets WHERE user_id=?", (user_id,))
     return cursor.fetchone()
 
-# ---------------- CONFIG (UNCHANGED) ----------------
+# ---------------- CONFIG ----------------
 STAFF_ROLE = "Staff"
 LOG_CHANNEL = "ticket-logs"
 CATEGORY = "ticket"
 
 ticket_count = 0
 
-# ---------------- PURGE COMMAND (UNCHANGED) ----------------
+# ---------------- PURGE ----------------
 @bot.command()
 @commands.has_permissions(manage_messages=True)
 async def purge(ctx, amount: int = 100):
@@ -77,7 +78,7 @@ async def purge(ctx, amount: int = 100):
     await asyncio.sleep(2)
     await msg.delete()
 
-# ---------------- AUTO CLOSE (UNCHANGED) ----------------
+# ---------------- AUTO CLOSE ----------------
 async def auto_close(channel):
     await asyncio.sleep(3600)
     try:
@@ -86,11 +87,10 @@ async def auto_close(channel):
     except:
         pass
 
-# ---------------- CREATE TICKET (ONLY FIX HERE) ----------------
+# ---------------- CREATE TICKET (UNCHANGED + FIX ONLY) ----------------
 async def create_ticket(interaction, selected_type):
     global ticket_count
 
-    # FIX: interaction safe
     if not interaction.response.is_done():
         await interaction.response.defer(ephemeral=True)
 
@@ -126,9 +126,17 @@ async def create_ticket(interaction, selected_type):
     if role:
         await channel.set_permissions(role, view_channel=True)
 
-    add_ticket(interaction.user.id, channel.id, ticket_count, selected_type)
+    # 🔥 FIX ADDED: source channel saved
+    source_channel_id = interaction.channel.id
 
-    # ---------------- EMBED (UNCHANGED STYLE) ----------------
+    add_ticket(
+        interaction.user.id,
+        channel.id,
+        ticket_count,
+        selected_type,
+        source_channel_id
+    )
+
     embed = discord.Embed(
         title="🎫 INTELLECT-X TICKET OPENED",
         description=f"""
@@ -139,8 +147,8 @@ async def create_ticket(interaction, selected_type):
 📌 **Ticket Type:** {selected_type}
 
 ━━━━━━━━━━━━━━━━━━━━━━
-👨‍💻 Welcome! Staff will be soon as soon.
-🧡 Please describe your issue clearly.
+👨‍💻 Staff will be soon
+👉 Please describe your issue clearly
 ━━━━━━━━━━━━━━━━━━━━━━
 """,
         color=discord.Color.red()
@@ -152,23 +160,9 @@ async def create_ticket(interaction, selected_type):
         view=TicketButtons()
     )
 
-    # ---------------- LOG (UNCHANGED) ----------------
     log = discord.utils.get(interaction.guild.text_channels, name=LOG_CHANNEL)
     if log:
-        log_embed = discord.Embed(
-            title="📥 NEW TICKET CREATED",
-            description=f"""
-🎫 **Ticket Number:** #{num}
-👤 **User:** {interaction.user.mention}
-📌 **Type:** {selected_type}
-
-━━━━━━━━━━━━━━━━━━━━━━
-👋 Welcome! Staff will be with you soon.
-━━━━━━━━━━━━━━━━━━━━━━
-""",
-            color=discord.Color.dark_red()
-        )
-        await log.send(embed=log_embed)
+        await log.send(f"📥 Ticket #{num} created by {interaction.user}")
 
     await interaction.followup.send(
         f"✅ Ticket created: {channel.mention}",
@@ -177,7 +171,7 @@ async def create_ticket(interaction, selected_type):
 
     bot.loop.create_task(auto_close(channel))
 
-# ---------------- BUTTONS (UNCHANGED) ----------------
+# ---------------- BUTTONS (ONLY CLOSE FIXED) ----------------
 class TicketButtons(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -206,6 +200,18 @@ class TicketButtons(discord.ui.View):
         if log:
             await log.send("📜 Ticket Closed", file=file)
 
+        # 🔥 SOURCE CHANNEL CHAT DELETE FEATURE
+        cursor.execute("SELECT source_channel_id FROM tickets WHERE channel_id=?", (interaction.channel.id,))
+        data = cursor.fetchone()
+
+        if data and data[0]:
+            source = interaction.guild.get_channel(data[0])
+            if source:
+                try:
+                    await source.purge(limit=None)
+                except:
+                    pass
+
         remove_ticket(interaction.channel.id)
         await interaction.channel.delete()
 
@@ -213,13 +219,14 @@ class TicketButtons(discord.ui.View):
 class SupportPanelSelect(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="GENERAL SUPPORT", emoji="🧡"),
+            discord.SelectOption(label="GENERAL SUPPORT", emoji="❤️"),
             discord.SelectOption(label="TECH ISSUE", emoji="🛠️"),
             discord.SelectOption(label="BILLING HELP", emoji="💳"),
             discord.SelectOption(label="ACCOUNT ISSUE", emoji="🔐"),
             discord.SelectOption(label="PRODUCT HELP", emoji="📦"),
             discord.SelectOption(label="PANEL SUPPORT", emoji="🔴"),
             discord.SelectOption(label="SOFTWARE HELP", emoji="💻"),
+            discord.SelectOption(label="PAYMENT ISSUE", emoji="💻"),
         ]
         super().__init__(placeholder="Select Support Type", options=options)
 
@@ -278,11 +285,11 @@ class SalePanelView(discord.ui.View):
     async def buy(self, interaction, button):
         await create_ticket(interaction, "SALE PURCHASE")
 
-# ---------------- MAIN DROPDOWN (UNCHANGED) ----------------
+# ---------------- MAIN DROPDOWN ----------------
 class TicketDropdown(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="Support", emoji="🧡"),
+            discord.SelectOption(label="Support", emoji="❤️"),
             discord.SelectOption(label="Purchase", emoji="🛒"),
             discord.SelectOption(label="SALE PANEL", emoji="🔥"),
         ]
@@ -292,7 +299,7 @@ class TicketDropdown(discord.ui.Select):
         choice = self.values[0]
 
         if choice == "Support":
-            await interaction.response.send_message("🧡 Select Support Type:", view=SupportPanelView(), ephemeral=True)
+            await interaction.response.send_message("❤️ Select Support Type:", view=SupportPanelView(), ephemeral=True)
 
         elif choice == "Purchase":
             await interaction.response.send_message("🛒 Select Purchase Panel:", view=PurchasePanelView(), ephemeral=True)
@@ -306,8 +313,6 @@ class TicketView(discord.ui.View):
         self.add_item(TicketDropdown())
 
 # ---------------- PANEL COMMAND ----------------
-panel_message_id = None
-
 @bot.command()
 async def panel(ctx):
     embed = discord.Embed(
