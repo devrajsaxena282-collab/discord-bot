@@ -139,7 +139,7 @@ async def create_ticket(interaction, selected_type):
 📌 **Ticket Type:** {selected_type}
 
 ━━━━━━━━━━━━━━━━━━━━━━
- Welcome! Staff will be soon as soon.
+🧑🏼‍💼 Welcome! Staff will be soon as soon.
 👉 Please describe your issue clearly.
 ━━━━━━━━━━━━━━━━━━━━━━
 """,
