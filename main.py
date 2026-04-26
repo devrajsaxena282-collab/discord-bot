@@ -139,8 +139,8 @@ async def create_ticket(interaction, selected_type):
 📌 **Ticket Type:** {selected_type}
 
 ━━━━━━━━━━━━━━━━━━━━━━
-👨‍💻 Welcome! Staff will be soon as soon.
-🧡 Please describe your issue clearly.
+ Welcome! Staff will be soon as soon.
+👉 Please describe your issue clearly.
 ━━━━━━━━━━━━━━━━━━━━━━
 """,
         color=discord.Color.red()
@@ -163,7 +163,7 @@ async def create_ticket(interaction, selected_type):
 📌 **Type:** {selected_type}
 
 ━━━━━━━━━━━━━━━━━━━━━━
-👋 Welcome! Staff will be with you soon.
+👋 Welcome! Staff will be soon as soon.
 ━━━━━━━━━━━━━━━━━━━━━━
 """,
             color=discord.Color.dark_red()
@@ -213,7 +213,7 @@ class TicketButtons(discord.ui.View):
 class SupportPanelSelect(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label="GENERAL SUPPORT", emoji="🧡"),
+            discord.SelectOption(label="GENERAL SUPPORT", emoji="❤️"),
             discord.SelectOption(label="TECH ISSUE", emoji="🛠️"),
             discord.SelectOption(label="BILLING HELP", emoji="💳"),
             discord.SelectOption(label="ACCOUNT ISSUE", emoji="🔐"),
