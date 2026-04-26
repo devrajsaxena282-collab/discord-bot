@@ -4,7 +4,7 @@ from io import BytesIO
 import sqlite3
 import asyncio
 import os
-from flask import Flask, request
+from flask import Flask
 from threading import Thread
 
 # ---------------- FLASK ----------------
@@ -18,8 +18,7 @@ def run():
     app.run(host="0.0.0.0", port=8080)
 
 def keep_alive():
-    t = Thread(target=run)
-    t.start()
+    Thread(target=run).start()
 
 # ---------------- DATABASE ----------------
 conn = sqlite3.connect("tickets.db")
@@ -33,24 +32,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     ticket_type TEXT
 )
 """)
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS config (
-    key TEXT,
-    value TEXT
-)
-""")
 conn.commit()
-
-def get_ticket_count():
-    cursor.execute("SELECT value FROM config WHERE key='count'")
-    row = cursor.fetchone()
-    return int(row[0]) if row else 0
-
-def save_ticket_count(count):
-    cursor.execute("DELETE FROM config WHERE key='count'")
-    cursor.execute("INSERT INTO config VALUES ('count', ?)", (str(count),))
-    conn.commit()
 
 def add_ticket(user_id, channel_id, num, ttype):
     cursor.execute("INSERT INTO tickets VALUES (?, ?, ?, ?)",
@@ -77,7 +59,7 @@ STAFF_ROLE = "Staff"
 LOG_CHANNEL = "ticket-logs"
 CATEGORY = "ticket"
 
-ticket_count = get_ticket_count()
+ticket_count = 0
 
 # ---------------- AUTO CLOSE ----------------
 async def auto_close(channel):
@@ -88,20 +70,28 @@ async def auto_close(channel):
     except:
         pass
 
-# ---------------- CREATE TICKET FUNCTION ----------------
+# ---------------- CREATE TICKET ----------------
 async def create_ticket(interaction, selected_type):
     global ticket_count
 
-    if get_user_ticket(interaction.user.id):
-        return await interaction.response.send_message(
-            "❌ You already have a ticket!", ephemeral=True
-        )
+    # 🔥 FIXED CHECK (DB + REAL CHANNEL)
+    existing = get_user_ticket(interaction.user.id)
+    if existing:
+        channel = interaction.guild.get_channel(existing[1])
+        if channel:
+            return await interaction.response.send_message(
+                "❌ You already have a ticket!", ephemeral=True
+            )
+        else:
+            remove_ticket(existing[1])  # ghost remove
 
     category = discord.utils.get(interaction.guild.categories, name=CATEGORY)
+    if not category:
+        return await interaction.response.send_message(
+            "❌ Create 'ticket' category first", ephemeral=True
+        )
 
     ticket_count += 1
-    save_ticket_count(ticket_count)
-
     num = str(ticket_count).zfill(3)
 
     channel = await interaction.guild.create_text_channel(
@@ -179,21 +169,6 @@ class PanelDropdown(discord.ui.Select):
             discord.SelectOption(label="UID BYPASS"),
             discord.SelectOption(label="EMULATOR BYPASS"),
             discord.SelectOption(label="CUSTOM PANEL"),
-            discord.SelectOption(label="AIMSILENT EXE"),
-            discord.SelectOption(label="AIMSILENT APK"),
-            discord.SelectOption(label="STREAMER PANEL"),
-            discord.SelectOption(label="INTERNAL MAX"),
-            discord.SelectOption(label="AIMKILL EXE"),
-            discord.SelectOption(label="OPTIMIZATION"),
-            discord.SelectOption(label="WINDOWS 10 PRO"),
-            discord.SelectOption(label="WINDOWS 11 PRO"),
-            discord.SelectOption(label="MS OFFICE 2021 PREMIUM"),
-            discord.SelectOption(label="MS 365 PREMIUM"),
-            discord.SelectOption(label="DEVICE ROOTING"),
-            discord.SelectOption(label="DRIP CLIENT"),
-            discord.SelectOption(label="BR MOD"),
-            discord.SelectOption(label="HG CHEATS"),
-            discord.SelectOption(label="KOS ROOT"),
         ]
         super().__init__(placeholder="Select Panel", options=options)
 
