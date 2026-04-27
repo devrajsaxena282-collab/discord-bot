@@ -324,13 +324,13 @@ async def panel(ctx):
 𝕚𝕟𝕢𝕦𝕚𝕣𝕚𝕖𝕤.
 
 ━━━━━━━━━━━━━━━━━━━━━━
-🔰 Rules:
-* Ticket are only for
-purchases and support.
-* Any unrelated requests
-=instant ban.
-* Main respect with
-staff at all time.
+🔰 ℝ𝕦𝕝𝕖𝕤:
+* 𝕋𝕚𝕔𝕜𝕖𝕥 𝕒𝕣𝕖 𝕠𝕟𝕝𝕪 𝕗𝕠𝕣 
+𝕡𝕦𝕣𝕔𝕙𝕒𝕤𝕖𝕤 𝕒𝕟𝕕 𝕤𝕦𝕡𝕡𝕠𝕣𝕥.
+* 𝔸𝕟𝕪 𝕦𝕟𝕣𝕖𝕝𝕒𝕥𝕖𝕕 𝕣𝕖𝕢𝕦𝕖𝕤𝕥𝕤
+=𝕚𝕟𝕤𝕥𝕒𝕟𝕥 𝕓𝕒𝕟.
+* 𝕄𝕒𝕚𝕟 𝕣𝕖𝕤𝕡𝕖𝕔𝕥 𝕨𝕚𝕥𝕙
+𝕤𝕥𝕒𝕗𝕗 𝕒𝕥 𝕒𝕝𝕝 𝕥𝕚𝕞𝕖.
 ━━━━━━━━━━━━━━━━━━━━━━
 ━━━━━
 𝕴𝖓𝖙𝖊𝖗𝖆𝖈𝖙 𝖜𝖎𝖙𝖍 𝖙𝖍𝖊 𝖇𝖊𝖑𝖔𝖜
