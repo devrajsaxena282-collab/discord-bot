@@ -313,7 +313,7 @@ panel_message_id = None
 @bot.command()
 async def panel(ctx):
     embed = discord.Embed(
-        title="INTELLECT-X – Official Tickets System",
+        title="𝐈𝐍𝐓𝐄𝐋𝐋𝐄𝐂𝐓-𝐗-𝐎𝐟𝐟𝐢𝐜𝐢𝐚𝐥 𝐓𝐢𝐜𝐤𝐞𝐭𝐬 𝐒𝐲𝐬𝐭𝐞𝐦",
         description="""
 Welcome to the official
 ticket system of
