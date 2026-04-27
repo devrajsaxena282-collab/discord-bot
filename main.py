@@ -315,13 +315,22 @@ async def panel(ctx):
     embed = discord.Embed(
         title="INTELLECT-X – Official Tickets System",
         description="""
-Welcome to the official ticket system of INTELLECT-X.
+Welcome to the official
+ticket system of
+INTELLECT-X.
+Open a ticket for
+purchases,support,or
+any product-related
+inquiries.
 
 ━━━━━━━━━━━━━━━━━━━━━━
 🔰 Rules:
-* Only support & purchase tickets
-* No spam
-* Respect staff
+* Ticket are only for
+purchases and support.
+* Any unrelated requests
+=instant ban.
+* Main respect with
+staff at all time.
 ━━━━━━━━━━━━━━━━━━━━━━
 """,
         color=discord.Color.dark_red()
