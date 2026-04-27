@@ -315,13 +315,13 @@ async def panel(ctx):
     embed = discord.Embed(
         title="𝐈𝐍𝐓𝐄𝐋𝐋𝐄𝐂𝐓-𝐗-𝐎𝐟𝐟𝐢𝐜𝐢𝐚𝐥 𝐓𝐢𝐜𝐤𝐞𝐭𝐬 𝐒𝐲𝐬𝐭𝐞𝐦",
         description="""
-Welcome to the official
-ticket system of
-INTELLECT-X.
-Open a ticket for
-purchases,support,or
-any product-related
-inquiries.
+𝕎𝕖𝕝𝕔𝕠𝕞𝕖 𝕥𝕠 𝕥𝕙𝕖 𝕠𝕗𝕗𝕚𝕔𝕚𝕒𝕝
+𝕥𝕚𝕔𝕜𝕖𝕥 𝕤𝕪𝕤𝕥𝕖𝕞 𝕠𝕗 
+𝕀ℕ𝕋𝔼𝕃𝕃𝔼ℂ𝕋-𝕏.
+𝕆𝕡𝕖𝕟 𝕒 𝕥𝕚𝕔𝕜𝕖𝕥 𝕗𝕠𝕣
+𝕡𝕦𝕣𝕔𝕙𝕒𝕤𝕖𝕤,𝕤𝕦𝕡𝕡𝕠𝕣𝕥,𝕠𝕣 
+𝕒𝕟𝕪 𝕡𝕣𝕠𝕕𝕦𝕔𝕥-𝕣𝕖𝕝𝕒𝕥𝕖𝕕
+𝕚𝕟𝕢𝕦𝕚𝕣𝕚𝕖𝕤.
 
 ━━━━━━━━━━━━━━━━━━━━━━
 🔰 Rules:
