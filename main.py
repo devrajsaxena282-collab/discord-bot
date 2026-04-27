@@ -333,8 +333,8 @@ purchases and support.
 staff at all time.
 ━━━━━━━━━━━━━━━━━━━━━━
 ━━━━━
-Interact with the below 
-combo box to proceed!
+𝕴𝖓𝖙𝖊𝖗𝖆𝖈𝖙 𝖜𝖎𝖙𝖍 𝖙𝖍𝖊 𝖇𝖊𝖑𝖔𝖜
+𝖈𝖔𝖒𝖇𝖔 𝖇𝖔𝖝 𝖙𝖔 𝖕𝖗𝖔𝖈𝖊𝖊𝖉!
 ━━━━━━━━━━━━━━━━━━━━━━
 ━━━━━
 """,
