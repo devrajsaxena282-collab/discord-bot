@@ -332,6 +332,11 @@ purchases and support.
 * Main respect with
 staff at all time.
 ━━━━━━━━━━━━━━━━━━━━━━
+━━━━━
+Interact with the below 
+combo box to proceed!
+━━━━━━━━━━━━━━━━━━━━━━
+━━━━━
 """,
         color=discord.Color.dark_red()
     )
